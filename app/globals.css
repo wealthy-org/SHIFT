@@ -43,4 +43,40 @@ a{color:#C8F135}a:hover{color:#E2FF7A}
 }
 @media (prefers-reduced-motion: reduce){
 .sh *{animation:none !important;transition:none !important}
-}
+}.sh .btnl{transition:background-color .2s}.sh .btnl:hover{background:#DBFF5C;color:#0F130E}
+.sh .btng{transition:border-color .2s}.sh .btng:hover{border-color:#E9EDE2;color:#E9EDE2}
+.sh .wopt{transition:border-color .2s}.sh .wopt:hover{border-color:#C8F135}
+@keyframes viewIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes badgeIn{from{transform:translateY(-140px) rotate(-6deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes stamp0{0%{transform:scale(2) rotate(-6deg);opacity:0}60%{transform:scale(.96) rotate(-2deg);opacity:1}100%{transform:scale(1) rotate(-2deg);opacity:1}}
+.sh .vin{animation:viewIn .5s cubic-bezier(.2,.8,.2,1) both}
+.sh .bin{animation:badgeIn .9s cubic-bezier(.2,.9,.25,1.12) both}
+.sh .spin{animation:spin .8s linear infinite}
+.sh .stamp0{animation:stamp0 .5s cubic-bezier(.3,1.4,.5,1) .2s both}
+@media (prefers-reduced-motion: reduce){.sh *{animation:none !important;transition:none !important}}
+.sh .nav{transition:background-color .2s,color .2s}.sh .nav:hover{background:#192017;color:#E9EDE2}
+.sh .desk{transition:border-color .25s}.sh .desk:hover{border-color:#5C6857;color:#E9EDE2}
+.sh .segb:hover{color:#E9EDE2}
+.sh .tab:hover{color:#E9EDE2}
+@keyframes stamp2{0%{transform:scale(2) rotate(-6deg);opacity:0}60%{transform:scale(.96) rotate(-1.5deg);opacity:1}100%{transform:scale(1) rotate(-1.5deg);opacity:1}}
+@keyframes fall{from{transform:translateY(-20px) rotate(0)}to{transform:translateY(640px) rotate(540deg);opacity:0}}
+@keyframes backdrop{from{opacity:0}to{opacity:1}}
+@keyframes ring{0%,100%{r:5}50%{r:8}}
+.sh .stamp2{animation:stamp2 .5s cubic-bezier(.3,1.4,.5,1) .15s both}
+.sh .fall{animation:fall 2.4s linear forwards}
+.sh .bd{animation:backdrop .3s ease both}
+.sh .lrow{transition:background-color .2s}.sh .lrow:hover{background:#192017;color:#E9EDE2}
+@keyframes rowIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+.sh .rin{animation:rowIn .4s cubic-bezier(.2,.8,.2,1) both}
+@keyframes stamp4{0%{transform:scale(2.2) rotate(-14deg);opacity:0}60%{transform:scale(.95) rotate(-8deg);opacity:1}100%{transform:scale(1) rotate(-8deg);opacity:1}}
+.sh .stamp4{animation:stamp4 .5s cubic-bezier(.3,1.4,.5,1) both}
+.sh .grow{transform-origin:left center;animation:grow 1.2s cubic-bezier(.2,.8,.2,1) .3s both}
+.sh .ev{transition:background-color .2s}.sh .ev:hover{background:#151B13}
+@keyframes type{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+@keyframes flash{0%{background:rgba(200,241,53,.2)}100%{background:rgba(200,241,53,0)}}
+.sh .typ{animation:type .3s ease both}
+.sh .tr{transition:background-color .5s,color .5s,border-color .4s,transform .4s,width .95s linear,height .7s cubic-bezier(.2,.8,.2,1),opacity .4s}
+@keyframes skl{0%{background-position:100% 50%}100%{background-position:0% 50%}}
+.sh .sk{background:linear-gradient(90deg,#171C15 25%,#222A1F 37%,#171C15 63%);background-size:400% 100%;animation:skl 1.5s ease infinite;border-radius:8px}
+@media (min-width:900px){.sh .appside{position:sticky;top:0;height:100vh;align-self:flex-start;overflow-y:auto}}

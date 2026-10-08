@@ -183,17 +183,17 @@ export default function Shift() {
 </a>
 <nav aria-label="Main" style={{display: 'flex', flexWrap: 'wrap', gap: '6px 26px', fontSize: '15px', flex: '1 1 auto'}}>
 <a className="navlink" href="#how">How it works</a>
-<a className="navlink" href="#office">Live office</a>
+<a className="navlink" href="/office">Live office</a>
 <a className="navlink" href="#career">Careers</a>
-<a className="navlink" href="#payday">Payroll</a>
-<a className="navlink" href="#proof">Proof</a>
+<a className="navlink" href="/payroll">Payroll</a>
+<a className="navlink" href="/proof">Proof</a>
 </nav>
 <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
 <span style={{display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#AEB7A8'}}>
 <span className="live" style={{width: '8px', height: '8px', borderRadius: '50%', background: '#C8F135', display: 'inline-block'}} />
 Shift active
 </span>
-<a href="#office" className="btn-ghost" style={{textDecoration: 'none', color: '#E9EDE2', fontSize: '14px', fontWeight: '500', padding: '10px 16px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', border: '1px solid #3A4436', borderRadius: '999px'}}>Connect wallet</a>
+<a href="/clock-in" className="btn-ghost" style={{textDecoration: 'none', color: '#E9EDE2', fontSize: '14px', fontWeight: '500', padding: '10px 16px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', border: '1px solid #3A4436', borderRadius: '999px'}}>Connect wallet</a>
 </div>
 </div>
 </header>
@@ -210,7 +210,7 @@ Shift active
 <p className="fd" style={{animationDelay: '.7s', margin: '28px 0 0', fontSize: 'clamp(24px, 2.5vw, 32px)', fontWeight: '500', lineHeight: '1.2', letterSpacing: '-0.01em', maxWidth: '18ch'}}>Clock in. Launch. Perform. Get paid.</p>
 <p className="fd" style={{animationDelay: '.85s', margin: '18px 0 0', color: '#AEB7A8', maxWidth: '44ch'}}>The onchain workforce powered by Pons. You get hired, your employee token launches, the market grades your shift, and payday is provable on Robinhood Chain.</p>
 <div className="fd" style={{animationDelay: '1s', display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '36px'}}>
-<a href="#office" className="btn-lime" style={{textDecoration: 'none', background: '#C8F135', color: '#0F130E', fontWeight: '600', fontSize: '16px', padding: '0 26px', minHeight: '52px', display: 'inline-flex', alignItems: 'center', borderRadius: '999px'}}>Clock in</a>
+<a href="/clock-in" className="btn-lime" style={{textDecoration: 'none', background: '#C8F135', color: '#0F130E', fontWeight: '600', fontSize: '16px', padding: '0 26px', minHeight: '52px', display: 'inline-flex', alignItems: 'center', borderRadius: '999px'}}>Clock in</a>
 <a href="#how" className="btn-ghost" style={{textDecoration: 'none', color: '#E9EDE2', fontWeight: '500', fontSize: '16px', padding: '0 24px', minHeight: '52px', display: 'inline-flex', alignItems: 'center', border: '1px solid #3A4436', borderRadius: '999px'}}>How SHIFT works</a>
 </div>
 </div>
@@ -404,7 +404,7 @@ Shift active
 <div style={{color: '#8E978A', fontSize: '14px'}}>{sel.id}, {sel.dept}, {sel.rank}</div>
 </div>
 <div style={{display: 'flex', flexWrap: 'wrap', gap: '10px'}}>
-<a href="#office" className="btn-ghost" style={{textDecoration: 'none', color: '#E9EDE2', fontSize: '15px', padding: '0 18px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', border: '1px solid #3A4436', borderRadius: '999px'}}>Open employee profile</a>
+<a href="/office" className="btn-ghost" style={{textDecoration: 'none', color: '#E9EDE2', fontSize: '15px', padding: '0 18px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', border: '1px solid #3A4436', borderRadius: '999px'}}>Open employee profile</a>
 <a href="#office" className="btn-lime" style={{textDecoration: 'none', background: '#C8F135', color: '#0F130E', fontWeight: '600', fontSize: '15px', padding: '0 18px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', borderRadius: '999px'}}>View on Pons ↗</a>
 </div>
 </div>
@@ -551,7 +551,7 @@ Shift active
 <p style={{margin: '0', fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '900', fontSize: 'clamp(56px, 9vw, 136px)', lineHeight: '0.88', color: '#5F685B'}}>Pons launches the markets.</p>
 <p style={{margin: '0', fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '900', fontSize: 'clamp(56px, 9vw, 136px)', lineHeight: '0.88', color: '#E9EDE2'}}>SHIFT runs the company.</p>
 <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '16px 28px', marginTop: '48px'}}>
-<a href="#top" className="btn-lime" style={{textDecoration: 'none', background: '#C8F135', color: '#0F130E', fontWeight: '600', fontSize: '17px', padding: '0 30px', minHeight: '56px', display: 'inline-flex', alignItems: 'center', borderRadius: '999px'}}>Clock in</a>
+<a href="/clock-in" className="btn-lime" style={{textDecoration: 'none', background: '#C8F135', color: '#0F130E', fontWeight: '600', fontSize: '17px', padding: '0 30px', minHeight: '56px', display: 'inline-flex', alignItems: 'center', borderRadius: '999px'}}>Clock in</a>
 <span style={{color: '#8E978A'}}>Your next shift starts the moment your token is live.</span>
 </div>
 </section>
@@ -565,8 +565,8 @@ Shift active
 <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px 28px'}}>
 <span>Network: Robinhood Chain</span>
 <span>Launch layer: Pons</span>
-<a className="navlink" href="#office">Leaderboard</a>
-<a className="navlink" href="#payday">Payroll</a>
+<a className="navlink" href="/leaderboard">Leaderboard</a>
+<a className="navlink" href="/payroll">Payroll</a>
 </div>
 </div>
 </footer>
