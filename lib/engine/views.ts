@@ -64,7 +64,7 @@ export function deskOf(s: State, e: Employee, now: number) {
   return {
     id: e.employeeId, code: e.code, name: e.displayName, ticker: e.ticker, c1: e.avatar[0], c2: e.avatar[1], wallet: e.wallet,
     status: statusOf(s, e, now), rank: RANK_NAMES[act ? rankFor(score) : e.currentRank], score, mcap: m ? marketCap(m) : 0, secs, snapsDone,
-    pay: eth(e.totalPayrollEarned) + estimate(s, e.employeeId, now).payEth, test: e.testLabel || null, shiftStatus: shown?.status || null,
+    pay: eth(e.totalPayrollEarned) + estimate(s, e.employeeId, now).payEth, test: e.testLabel || null, sim: e.bot || !!e.testLabel, shiftStatus: shown?.status || null,
   };
 }
 
@@ -76,6 +76,7 @@ export function officeView(s: State, now: number) {
   return {
     now, epochId: cur.epochId, payday: Math.max(0, Math.round((cur.endTime - now) / 1000)),
     onShift: desks.filter((d) => d.status === "WORKING" || d.status === "CLOCKED IN").length, total: emps.length, launches: emps.length, poolEth: est.poolEth, desks,
+    simCount: desks.filter((d) => d.sim).length,
     network: { block: blockAt(s, now), name: "Robinhood Chain Testnet (simulated)" },
   };
 }
@@ -116,7 +117,7 @@ export function employeeView(s: State, id: number, now: number) {
   const lr = lastValid(s, e);
   return {
     now,
-    me: { id, code: e.code, name: e.displayName, ticker: e.ticker, c1: e.avatar[0], c2: e.avatar[1], dept: e.department, wallet: e.wallet, token: e.tokenAddress, market: e.ponsMarketAddress, test: e.testLabel || null, profile: e.profile },
+    me: { id, code: e.code, name: e.displayName, ticker: e.ticker, c1: e.avatar[0], c2: e.avatar[1], dept: e.department, wallet: e.wallet, token: e.tokenAddress, market: e.ponsMarketAddress, test: e.testLabel || null, sim: e.bot || !!e.testLabel, profile: e.profile },
     status: statusOf(s, e, now), rank: RANK_NAMES[act ? rankFor(live) : e.currentRank], best: RANK_NAMES[best], launchStatus: e.launchStatus,
     shift: sh ? {
       id: sh.shiftId, code: sh.code, status: sh.status, active: !!act, done, elapsed: el, left: CONFIG.shiftSeconds - el, snaps: snaps.length, missing: sh.missing,
@@ -159,7 +160,7 @@ export function leaderboardView(s: State, now: number, view: string, sort: strin
       const sum = (f: (x: Shift) => number) => w.reduce((a, x) => a + f(x), 0);
       r = { score: sum((x) => x.performanceScore) / w.length, mcap: sum((x) => x.averageMarketCap) / w.length, vol: sum((x) => x.volume), pay: eth(sum((x) => x.payrollAmount)), best: Math.max(...w.map((x) => x.finalRank)) };
     }
-    rows.push({ id: e.employeeId, name: e.displayName, ticker: e.ticker, c1: e.avatar[0], c2: e.avatar[1], test: e.testLabel || null, shifts: e.totalShifts, ...r });
+    rows.push({ id: e.employeeId, name: e.displayName, ticker: e.ticker, c1: e.avatar[0], c2: e.avatar[1], test: e.testLabel || null, sim: e.bot || !!e.testLabel, shifts: e.totalShifts, ...r });
   }
   const key = { "Performance score": "score", "Payroll earned": "pay", "Highest rank": "best", "Average market cap": "mcap", Volume: "vol" }[sort as string] || "score";
   rows.sort((a, b) => b[key] - a[key] || b.score - a.score);

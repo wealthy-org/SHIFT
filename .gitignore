@@ -1,6 +1,25 @@
+# dependencies and build output
 node_modules
 .next
 next-env.d.ts
+*.tsbuildinfo
+
+# local state and secrets
 .data
 .env
 .env.local
+
+# OS noise
+.DS_Store
+
+# contracts: libraries are reinstalled with `forge install`, build output is regenerated
+contracts/lib/
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+
+# design and brief sources kept locally
+/brief.md
+/fitur.html
+/docs
+/brief-pendukung.md

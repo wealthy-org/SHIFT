@@ -80,3 +80,7 @@ a{color:#C8F135}a:hover{color:#E2FF7A}
 @keyframes skl{0%{background-position:100% 50%}100%{background-position:0% 50%}}
 .sh .sk{background:linear-gradient(90deg,#171C15 25%,#222A1F 37%,#171C15 63%);background-size:400% 100%;animation:skl 1.5s ease infinite;border-radius:8px}
 @media (min-width:900px){.sh .appside{position:sticky;top:0;height:100vh;align-self:flex-start;overflow-y:auto}}
+@media (min-width:1100px){.sh .o3-grid{grid-template-columns:minmax(0,1fr) 380px !important}}
+@keyframes o3pop{0%{transform:translateY(8px) scale(.8);opacity:0}60%{transform:translateY(-2px) scale(1.05);opacity:1}100%{transform:none;opacity:1}}
+.o3-badge{animation:o3pop .45s cubic-bezier(.3,1.4,.5,1) both}
+@media (prefers-reduced-motion: reduce){.o3-badge{animation:none}}

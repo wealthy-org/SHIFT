@@ -1,23 +1,28 @@
 import { NextResponse } from "next/server";
+import { WALLET_RE, sessionWallet } from "./auth";
 import { live } from "./engine/store";
 import type { State } from "./engine/types";
 
-export const WALLET_RE = /^0x[0-9a-fA-F]{40}$/;
+export { WALLET_RE };
 
-type Ctx = { s: State; now: number };
+type Ctx = { s: State; now: number; wallet: string | null };
+
 export function handle(fn: (ctx: Ctx, req: Request) => unknown | Promise<unknown>) {
   return async (req: Request) => {
     try {
-      const out = await fn(await live(), req);
+      const { s, now } = await live();
+      const out = await fn({ s, now, wallet: sessionWallet(req) }, req);
       return NextResponse.json(out, { headers: { "cache-control": "no-store" } });
     } catch (e: any) {
       const code = String(e?.message || "ERROR");
       const known = /^[A-Z_]+$/.test(code);
       if (!known) console.error("[api]", e);
-      return NextResponse.json({ error: known ? code : "INTERNAL" }, { status: known ? 400 : 500 });
+      const status = known ? (code === "NOT_AUTHENTICATED" ? 401 : code.startsWith("ADMIN_") ? 403 : 400) : 500;
+      return NextResponse.json({ error: known ? code : "INTERNAL" }, { status });
     }
   };
 }
+
 export const body = async (req: Request) => {
   try {
     return await req.json();
@@ -25,9 +30,18 @@ export const body = async (req: Request) => {
     return {};
   }
 };
-export function owned(s: State, id: number, wallet: string) {
-  const e = s.employees[id];
+
+// Every mutating route goes through here: the wallet comes from the signed session
+// cookie, never from the request body, so a caller cannot act as someone else.
+export function requireWallet(ctx: Ctx): string {
+  if (!ctx.wallet) throw new Error("NOT_AUTHENTICATED");
+  return ctx.wallet;
+}
+
+export function owned(ctx: Ctx, id: number) {
+  const wallet = requireWallet(ctx);
+  const e = ctx.s.employees[id];
   if (!e) throw new Error("UNKNOWN_EMPLOYEE");
-  if (!WALLET_RE.test(wallet || "") || e.wallet !== wallet.toLowerCase()) throw new Error("WALLET_MISMATCH");
+  if (e.wallet !== wallet) throw new Error("WALLET_MISMATCH");
   return e;
 }

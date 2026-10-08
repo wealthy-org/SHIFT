@@ -56,6 +56,9 @@ export function rebase(m: Market) {
   m.k = BASE_ETH * SUPPLY;
   m.holders = {};
   m.traders = [];
+  // Funder links are only meaningful inside one shift, and they grow without
+  // bound if carried over. Sybil detection re-learns them from this shift's trades.
+  m.fundedBy = {};
   m.trades = [];
   m.liq = [];
   m.secMcap = [];

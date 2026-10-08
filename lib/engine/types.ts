@@ -123,6 +123,8 @@ export interface Employee {
   rankHistory: { shiftId: number; from: number; to: number; score: number; ts: number; tx: string }[];
 }
 
+import type { Hex } from "./util";
+
 export interface Leaf {
   employeeId: number;
   wallet: string;
@@ -130,6 +132,7 @@ export interface Leaf {
   amount: number; // gwei
   claimedAt?: number;
   claimTx?: string;
+  proof?: Hex[];
 }
 export interface Epoch {
   epochId: number;
@@ -141,7 +144,7 @@ export interface Epoch {
   carryIn: number;
   payrollPool: number;
   treasuryAmount: number;
-  merkleRoot?: string;
+  merkleRoot?: Hex;
   finalizedAt?: number;
   claimsOpenAt?: number;
   totalShares: number;

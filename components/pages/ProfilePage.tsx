@@ -5,7 +5,7 @@ import { Fragment, useEffect, useState } from "react";
 import { ProfileSkeleton } from "../Skeleton";
 import AppShell from "../AppShell";
 import { CHIP, EXPLORER, LIME, ago, explorerTx, mmss, ponsToken, short } from "@/lib/format";
-import { ERRORS, post, useApi, useMe } from "@/lib/client";
+import { errorText, post, useApi, useMe } from "@/lib/client";
 
 const W = 560;
 const H = 170;
@@ -26,7 +26,7 @@ export default function ProfilePage({ id }: { id: number }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const { data, reload } = useApi<any>(`/api/employee/${id}`);
-  const { me, wallet } = useMe();
+  const { me } = useMe();
   useEffect(() => {
     try {
       const v = localStorage.getItem(`shift.promo.${id}`);
@@ -35,7 +35,7 @@ export default function ProfilePage({ id }: { id: number }) {
   }, [id]);
   if (!data) return <AppShell active="desk" title="My desk"><ProfileSkeleton /></AppShell>;
   const mine = me && me.id === id;
-  const { name, ticker, code, dept, wallet: empWallet, token } = { ...data.me, wallet: data.me.wallet };
+  const { name, ticker, code, dept, wallet, token } = data.me;
   const sh = data.shift;
   const ch = CHIP[data.status];
   const status = data.status, chipBg = ch[0], chipFg = ch[1], chipB = ch[2];
@@ -102,11 +102,10 @@ export default function ProfilePage({ id }: { id: number }) {
   };
   const restart = async () => {
     setBusy(true); setErr("");
-    try { await post("/api/shift/start", { employeeId: id, wallet }); await reload(); } catch (e: any) { setErr(ERRORS[e.message] || e.message); }
+    try { await post("/api/shift/start", { employeeId: id }); await reload(); } catch (e: unknown) { setErr(errorText(e)); }
     setBusy(false);
   };
   const canRestart = mine && sh && !sh.active && sh.status !== "FINALIZING" && data.launchStatus === "LIVE";
-  void empWallet;
   return (
     <AppShell active="desk" title="My desk" overlay={<>
 {showPromo && (<>

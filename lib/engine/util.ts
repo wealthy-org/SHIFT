@@ -1,7 +1,9 @@
 import { createHash } from "node:crypto";
+import { concatHex, encodeAbiParameters, keccak256, stringToHex } from "viem";
 
 export const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 export const hex = (s: string, n = 64) => "0x" + sha256(s).slice(0, n);
+export type Hex = `0x${string}`;
 export const short = (a: string) => (a && a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a || "");
 
 export function rand(h: { s: number }): number {
@@ -30,43 +32,72 @@ export const pick = <T,>(h: { s: number }, a: T[]): T => a[Math.floor(rand(h) * 
 export function canonical(v: any): string {
   if (v === null || typeof v !== "object") return JSON.stringify(v);
   if (Array.isArray(v)) return "[" + v.map(canonical).join(",") + "]";
-  return "{" + Object.keys(v).sort().map((k) => JSON.stringify(k) + ":" + canonical(v[k])).join(",") + "}";
+  const keys = Object.keys(v).filter((k) => v[k] !== undefined).sort();
+  return "{" + keys.map((k) => JSON.stringify(k) + ":" + canonical(v[k])).join(",") + "}";
 }
 
-// --- Merkle (sorted-pair sha256; a Solidity version would use keccak256) ---
-export const leafHash = (epochId: number, employeeId: number, wallet: string, amount: number) =>
-  sha256(`${epochId}|${employeeId}|${wallet}|${amount}`);
-const pairHash = (a: string, b: string) => (a < b ? sha256(a + b) : sha256(b + a));
+// --- Hashing -------------------------------------------------------------
+// keccak256 throughout, so every hash the backend produces can be recomputed by
+// PayrollDistributor and ShiftManager without a second scheme in the middle.
 
-export function merkleRoot(leaves: string[]): string {
-  if (!leaves.length) return "0x" + "0".repeat(64);
+/// Anchored by ShiftManager.finalizeShift as `resultHash`.
+export const resultHash = (pkg: unknown): Hex => keccak256(stringToHex(canonical(pkg)));
+
+/// Mirrors PayrollDistributor.leafHash: the inner hash is hashed again so no
+/// internal node of the tree can be presented as a leaf.
+export const leafHash = (epochId: number, employeeId: number, wallet: string, amountWei: bigint): Hex =>
+  keccak256(
+    keccak256(
+      encodeAbiParameters(
+        [{ type: "uint256" }, { type: "uint256" }, { type: "address" }, { type: "uint256" }],
+        [BigInt(epochId), BigInt(employeeId), wallet as Hex, amountWei],
+      ),
+    ),
+  );
+
+/// Mirrors OpenZeppelin's commutative hash: the pair is sorted, then hashed as
+/// 64 raw bytes.
+const pairHash = (a: Hex, b: Hex): Hex => (a.toLowerCase() < b.toLowerCase() ? keccak256(concatHex([a, b])) : keccak256(concatHex([b, a])));
+
+const ZERO: Hex = `0x${"0".repeat(64)}`;
+
+export function merkleRoot(leaves: Hex[]): Hex {
+  if (!leaves.length) return ZERO;
   let layer = leaves.slice();
   while (layer.length > 1) {
-    const next: string[] = [];
+    const next: Hex[] = [];
     for (let i = 0; i < layer.length; i += 2) next.push(i + 1 < layer.length ? pairHash(layer[i], layer[i + 1]) : layer[i]);
     layer = next;
   }
-  return "0x" + layer[0];
+  return layer[0];
 }
-export function merkleProof(leaves: string[], index: number): string[] {
-  const proof: string[] = [];
+
+export function merkleProof(leaves: Hex[], index: number): Hex[] {
+  const proof: Hex[] = [];
   let layer = leaves.slice();
   let i = index;
   while (layer.length > 1) {
     const sib = i % 2 ? i - 1 : i + 1;
     if (sib < layer.length) proof.push(layer[sib]);
-    const next: string[] = [];
+    const next: Hex[] = [];
     for (let j = 0; j < layer.length; j += 2) next.push(j + 1 < layer.length ? pairHash(layer[j], layer[j + 1]) : layer[j]);
     layer = next;
     i = Math.floor(i / 2);
   }
   return proof;
 }
-export function verifyProof(leaf: string, proof: string[], root: string): boolean {
+
+export function verifyProof(leaf: Hex, proof: Hex[], root: Hex): boolean {
   let h = leaf;
   for (const p of proof) h = pairHash(h, p);
-  return "0x" + h === root;
+  return h.toLowerCase() === root.toLowerCase();
 }
+
+/// Payroll is accounted in gwei offchain and settled in wei onchain.
+export const gweiToWei = (g: number) => BigInt(Math.round(g)) * 1_000_000_000n;
+
+/// Hash of the raw snapshot trail. The trail stays offchain; this makes it tamper-evident.
+export const snapshotsHash = (snapshots: unknown): Hex => keccak256(stringToHex(canonical(snapshots)));
 
 export const gwei = (eth: number) => Math.round(eth * 1e9);
 export const eth = (g: number) => g / 1e9;

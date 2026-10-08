@@ -1,0 +1,21 @@
+{
+  "chainId": 46630,
+  "deployedAtBlock": 11871554,
+  "admin": "0x4bB78a648B93621643Ac8d6E5FDd7ef3296E0325",
+  "signer": "0x15311E92e3b8235d9D7a58C615377Edca4698518",
+  "treasury": "0x4bB78a648B93621643Ac8d6E5FDd7ef3296E0325",
+  "contracts": {
+    "EmployeeRegistry": "0x6c294e9D6959B6AE5B976BA62689cF75ffdBe811",
+    "RankManager": "0x02ED1017509D0758Aa2e8E7374c6dfEb9EcAC00E",
+    "ShiftManager": "0x410Fd98Bb78d255d4C0cE0ac2D0CA5e1fD018653",
+    "PayrollVault": "0x5E17dDf437F0326c429465883c45E4dBE0bC14d1",
+    "PayrollDistributor": "0xa87f8fC594C217aE78F9d1E7Ac361DAB45Fe849E",
+    "PonsAdapter": "0xA932f1f371482166A13EeA21F9d38D8D2BFF2970"
+  },
+  "config": {
+    "shiftDuration": 300,
+    "cooldown": 20,
+    "claimDelay": 10,
+    "payrollBps": 7000
+  }
+}

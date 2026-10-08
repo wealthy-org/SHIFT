@@ -2,7 +2,8 @@ import { CONFIG, RANK_NAMES, rankIndex } from "./config";
 import { holderCount, marketCap, mockPons, rebase, stepMarket } from "./market";
 import { cleanTrades, scoreShift } from "./scoring";
 import type { ChainEvent, Employee, Epoch, Launch, Profile, Shift, Snapshot, State } from "./types";
-import { canonical, eth, gwei, hex, leafHash, merkleProof, merkleRoot, rand, seedOf, sha256, verifyProof } from "./util";
+import type { Hex } from "./util";
+import { canonical, eth, gwei, gweiToWei, hex, leafHash, merkleProof, merkleRoot, rand, resultHash, seedOf, snapshotsHash, verifyProof } from "./util";
 
 const FIRST = ["Mara", "Ilya", "Noor", "Tomas", "Ada", "Sven", "Lio", "Rhea", "Bao", "Esme", "Dario", "Yara", "Kai", "Nia", "Omar", "Lena", "Joss", "Mina", "Teo", "Ines", "Ravi", "Zoe", "Anders", "Priya", "Marco", "Hana", "Felix", "Amara", "Leif", "Sana", "Niko", "Elio", "Tessa", "Ugo", "Vera", "Wren", "Idris", "Jun", "Clara", "Pavel"];
 const LAST = ["Voss", "Brandt", "Kase", "Reyl", "Okonji", "Hale", "Marchetti", "Duval", "Lindqvist", "Toure", "Venn", "Feld", "Morrow", "Ashby", "Quill", "Strand", "Novak", "Okafor", "Bellamy", "Castell", "Drummond", "Ekwueme", "Fairchild", "Garrow", "Holloway", "Ivanek", "Jarrett", "Kowal", "Lachance", "Mercer", "Nakamura", "Oyelaran", "Pryce", "Rowan", "Sandoval", "Thorne", "Ulmer", "Vance", "Whitlock", "Yilmaz"];
@@ -34,7 +35,7 @@ export function emit(s: State, type: string, who: string, ts: number, x: Partial
   const id = s.nextEventId++;
   const ev: ChainEvent = { id, type, contract: CONTRACT[type], who, block: blockAt(s, ts), ts, tx: hex(`${type}|${id}|${ts}|${who}`), ...x };
   s.events.push(ev);
-  if (s.events.length > 4000) s.events.splice(0, s.events.length - 4000);
+  if (s.events.length > CONFIG.keepEvents) s.events.splice(0, s.events.length - CONFIG.keepEvents);
   return ev;
 }
 
@@ -196,7 +197,8 @@ function finalizeShift(s: State, e: Employee, sh: Shift, m: any, now: number) {
   if (e.bot) e.nextShiftAt = now + (CONFIG.botCooldownSeconds[0] + rand(s.rng) * (CONFIG.botCooldownSeconds[1] - CONFIG.botCooldownSeconds[0])) * 1000;
   m.secMcap = []; m.secLiq = [];
   const reason = missing > CONFIG.maxMissingSnapshots ? `${missing} snapshots missing` : r.excludedShare >= CONFIG.invalidExcludedShare ? `${Math.round(r.excludedShare * 100)}% of volume excluded as manipulation` : "";
-  const sub = canonical(sh.snapshots.map((x) => ({ ...x, liveScore: undefined })));
+  // liveScore is a running figure for the UI, not part of the audited trail.
+  const trail = sh.snapshots.map(({ liveScore: _drop, ...rest }) => rest);
   if (reason) {
     sh.status = "INVALID";
     sh.invalidReason = reason;
@@ -208,9 +210,9 @@ function finalizeShift(s: State, e: Employee, sh: Shift, m: any, now: number) {
   sh.finalRank = r.rank;
   sh.prevRank = e.currentRank;
   sh.promoted = r.rank > e.currentRank;
-  const pkg = { shiftId: sh.code, token: sh.tokenAddress, startBlock: sh.startBlock, endBlock: sh.endBlock, snapshotsHash: "0x" + sha256(sub), performanceScore: r.score, rank: RANK_NAMES[r.rank] };
+  const pkg = { shiftId: sh.code, token: sh.tokenAddress, startBlock: sh.startBlock, endBlock: sh.endBlock, snapshotsHash: snapshotsHash(trail), performanceScore: r.score, rank: RANK_NAMES[r.rank] };
   sh.resultPackage = pkg;
-  sh.resultHash = "0x" + sha256(canonical(pkg));
+  sh.resultHash = resultHash(pkg);
   e.totalShifts++;
   e.bestPerformanceScore = Math.max(e.bestPerformanceScore, r.score);
   const ev = emit(s, "Shift Finalized", e.displayName, now, { employeeId: e.employeeId, shiftId: sh.shiftId, payload: { ...pkg, resultHash: sh.resultHash } });
@@ -262,7 +264,7 @@ function finalizeEpoch(s: State, ep: Epoch, now: number) {
   });
   ep.leaves.forEach((l) => (s.employees[l.employeeId].totalPayrollEarned += l.amount));
   ep.shiftIds = shifts.map((x) => x.shiftId);
-  ep.merkleRoot = merkleRoot(ep.leaves.map((l) => leafHash(ep.epochId, l.employeeId, l.wallet, l.amount)));
+  ep.merkleRoot = merkleRoot(ep.leaves.map((l) => leafHash(ep.epochId, l.employeeId, l.wallet, gweiToWei(l.amount))));
   ep.status = "FINALIZED";
   ep.finalizedAt = now;
   ep.claimsOpenAt = now + CONFIG.claimDelaySeconds * 1000;
@@ -271,7 +273,7 @@ function finalizeEpoch(s: State, ep: Epoch, now: number) {
 }
 
 export function leafProof(ep: Epoch, employeeId: number) {
-  const hashes = ep.leaves.map((l) => leafHash(ep.epochId, l.employeeId, l.wallet, l.amount));
+  const hashes = ep.leaves.map((l) => leafHash(ep.epochId, l.employeeId, l.wallet, gweiToWei(l.amount)));
   const i = ep.leaves.findIndex((l) => l.employeeId === employeeId);
   if (i < 0) return null;
   return { leaf: hashes[i], proof: merkleProof(hashes, i), index: i };
@@ -285,8 +287,8 @@ export function claim(s: State, empId: number, epochId: number, now: number, sup
   if (!leaf) throw new Error("NOT_ELIGIBLE");
   const pr = leafProof(ep, empId)!;
   const amount = supplied?.amount ?? leaf.amount;
-  const proof = supplied?.proof ?? pr.proof;
-  if (!verifyProof(leafHash(epochId, empId, leaf.wallet, amount), proof, ep.merkleRoot!)) throw new Error("INVALID_PROOF");
+  const proof = (supplied?.proof as Hex[] | undefined) ?? pr.proof;
+  if (!verifyProof(leafHash(epochId, empId, leaf.wallet, gweiToWei(amount)), proof, ep.merkleRoot as Hex)) throw new Error("INVALID_PROOF");
   if (leaf.claimedAt) throw new Error("ALREADY_CLAIMED");
   leaf.claimedAt = now;
   const e = s.employees[empId];

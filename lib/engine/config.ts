@@ -1,3 +1,5 @@
+const BOTS = Math.max(0, Math.min(12, Math.floor(Number(process.env.SHIFT_BOTS ?? 12)) || 0));
+
 // All tunables live here. Rank thresholds, weights and payroll split are
 // placeholders per the brief and must be tuned with testnet simulations.
 export const CONFIG = {
@@ -43,9 +45,14 @@ export const CONFIG = {
   blocksPerSecond: 4,
   genesisBlock: 4_812_000,
 
-  warmupSeconds: 2 * 3600,
-  botCount: 12,
-  keepSnapshotsForShifts: 150,
+  // Simulated co-workers. Set SHIFT_BOTS=0 to run an office of real employees only.
+  botCount: BOTS,
+  // Backdated history so a fresh demo office is not empty. Pointless without bots.
+  warmupSeconds: BOTS > 0 ? 2 * 3600 : 0,
+  // Raw snapshot retention. The result hash is stored at finalize time, so older
+  // shifts stay verifiable by hash; these rows only feed the profile charts.
+  keepSnapshotsForShifts: 60,
+  keepEvents: 1500,
 };
 
 export const RANK_NAMES = CONFIG.ranks.map((r) => r[0]);

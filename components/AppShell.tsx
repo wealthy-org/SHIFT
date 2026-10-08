@@ -13,7 +13,7 @@ const ICONS: Record<string, string> = {
   proof: "M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7zM8.5 12l2.5 2.5 4.5-5",
 };
 
-export default function AppShell({ active, title, children, overlay }: { active: string; title: string; children: ReactNode; overlay?: ReactNode }) {
+export default function AppShell({ active, title, subtitle, actions, children, overlay }: { active: string; title: string; subtitle?: ReactNode; actions?: ReactNode; children: ReactNode; overlay?: ReactNode }) {
   const { me, wallet, secsToEpoch } = useMe();
   const deskHref = me ? `/employee/${me.id}` : "/clock-in";
   const nav = [
@@ -58,7 +58,9 @@ export default function AppShell({ active, title, children, overlay }: { active:
       </aside>
       <div style={{ flex: "999 1 560px", minWidth: 0 }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px 16px", padding: "16px clamp(18px,3vw,36px)", borderBottom: "1px solid #222A20" }}>
-          <h1 style={{ margin: 0, flex: "1 1 auto", fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: 800, fontSize: 34, lineHeight: 1 }}>{title}</h1>
+          <h1 style={{ margin: 0, flex: subtitle ? "0 0 auto" : "1 1 auto", fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: 800, fontSize: 34, lineHeight: 1 }}>{title}</h1>
+          {subtitle && <div style={{ flex: "1 1 auto", color: "#AEB7A8", fontSize: 15, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>{subtitle}</div>}
+          {actions}
           <span title="Simulated Pons market on a simulated chain. No real funds." style={{ border: "1px dashed #3A4436", borderRadius: 999, padding: "6px 10px", fontSize: 12, color: "#8E978A" }}>Testnet · simulated market</span>
           {wallet ? (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid #2E382A", borderRadius: 999, padding: "8px 14px", fontFamily: "'Geist Mono', monospace", fontSize: 13 }}>

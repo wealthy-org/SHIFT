@@ -5,7 +5,7 @@ import { Fragment, useEffect, useState } from "react";
 import { PayrollSkeleton } from "../Skeleton";
 import AppShell from "../AppShell";
 import { CHIP, EXPLORER, LIME, ago, explorerTx, mmss, ponsToken, short } from "@/lib/format";
-import { ERRORS, post, useApi, useMe } from "@/lib/client";
+import { errorText, post, useApi, useMe } from "@/lib/client";
 
 const SN = ["Estimated", "Finalized", "Claimable", "Paid"];
 const TX = ["Projected from the live shift. Can still change.", "Epoch closed, Merkle root published onchain.", "Your proof is ready. Claim whenever you like.", "Sent to your wallet, Payroll Claimed emitted."];
@@ -42,7 +42,7 @@ export default function PayrollPage() {
   const claim = async () => {
     if (!me || stage !== 2) return;
     setBusy(true); setErr("");
-    try { await post("/api/payroll/claim", { employeeId: me.id, wallet, epochId: f.epochId }); setShown(true); await reload(); } catch (e: any) { setErr(ERRORS[e.message] || e.message); }
+    try { await post("/api/payroll/claim", { employeeId: me.id, epochId: f.epochId }); setShown(true); await reload(); } catch (e: unknown) { setErr(errorText(e)); }
     setBusy(false);
   };
   const replay = () => setShown(false);

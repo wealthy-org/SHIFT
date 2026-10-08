@@ -19,7 +19,7 @@ export default function LeaderboardPage() {
   const sorts = SORTS.map((o) => ({ label: o, pressed: o === sort, border: o === sort ? LIME : "#2E382A", fg: o === sort ? LIME : "#AEB7A8", pick: () => setSort(o) }));
   const metricLabel = sort;
   const rows = (data?.rows || []).map((r: any, i: number) => ({
-    ...r, href: `/employee/${r.id}`, you: me && me.id === r.id ? "(you)" : r.test ? "(test)" : "", score: r.score.toFixed(1), mcap: r.mcap.toFixed(1), vol: r.vol.toFixed(1), pay: r.pay.toFixed(3),
+    ...r, href: `/employee/${r.id}`, you: me && me.id === r.id ? "(you)" : r.sim ? "SIM" : "", score: r.score.toFixed(1), mcap: r.mcap.toFixed(1), vol: r.vol.toFixed(1), pay: r.pay.toFixed(3),
     bg: me && me.id === r.id ? "rgba(200,241,53,0.07)" : "transparent", numColor: i < 3 ? LIME : "#5F685B", delay: (Math.min(i, 20) * 0.03).toFixed(2),
   }));
   const fmt = (r: any) => (data.key === "pay" ? r.pay + " ETH" : data.key === "best" ? r.rank : data.key === "mcap" ? r.mcap + " ETH" : data.key === "vol" ? r.vol + " ETH" : r.score);

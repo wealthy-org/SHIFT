@@ -1,45 +1,16 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { WalletError, ensureChain, hasWallet, onAccountsChanged, requestAccount, signMessage } from "./wallet";
 
-const KEY = "shift.testnet.wallet";
-
-// Testnet "wallet": a locally generated address. Real wallet connection is out of scope.
-export function useWallet() {
-  const [wallet, setWallet] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    try {
-      setWallet(localStorage.getItem(KEY));
-    } catch {}
-    setReady(true);
-  }, []);
-  const connect = useCallback(() => {
-    const b = new Uint8Array(20);
-    crypto.getRandomValues(b);
-    const w = "0x" + Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
-    try {
-      localStorage.setItem(KEY, w);
-    } catch {}
-    setWallet(w);
-    return w;
-  }, []);
-  const disconnect = useCallback(() => {
-    try {
-      localStorage.removeItem(KEY);
-    } catch {}
-    setWallet(null);
-  }, []);
-  return { wallet, ready, connect, disconnect };
-}
-
-export function useApi<T = any>(url: string | null, ms = 1000, keepPrev = false) {
+export function useApi<T = any>(url: string | null, ms = 1000, keepPrev = false, headers?: Record<string, string>) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const alive = useRef(true);
+  const headerKey = JSON.stringify(headers ?? null);
   const load = useCallback(async () => {
     if (!url) return;
     try {
-      const r = await fetch(url, { cache: "no-store" });
+      const r = await fetch(url, { cache: "no-store", headers });
       const j = await r.json();
       if (!alive.current) return;
       if (!r.ok) setError(j.error || "ERROR");
@@ -50,7 +21,7 @@ export function useApi<T = any>(url: string | null, ms = 1000, keepPrev = false)
     } catch {
       if (alive.current) setError("OFFLINE");
     }
-  }, [url]);
+  }, [url, headerKey]);
   useEffect(() => {
     alive.current = true;
     if (!keepPrev) setData(null);
@@ -64,17 +35,65 @@ export function useApi<T = any>(url: string | null, ms = 1000, keepPrev = false)
   return { data, error, reload: load };
 }
 
-export async function post<T = any>(url: string, body: any): Promise<T> {
-  const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-  const j = await r.json();
+export async function post<T = any>(url: string, body?: any, headers?: Record<string, string>): Promise<T> {
+  const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(body ?? {}) });
+  const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(j.error || "ERROR");
   return j;
 }
 
+// The session lives in an HttpOnly cookie, so /api/me is the only source of truth
+// for who is signed in. The browser never stores an address it can act on.
 export function useMe(ms = 1000) {
-  const w = useWallet();
-  const { data, reload } = useApi<any>(w.ready ? `/api/me${w.wallet ? `?wallet=${w.wallet}` : ""}` : null, ms);
-  return { ...w, me: data?.employee || null, launch: data?.launch || null, secsToEpoch: data?.secsToEpoch ?? null, cooldown: data?.cooldown ?? 0, loaded: !!data, reload };
+  const { data, reload } = useApi<any>("/api/me", ms);
+  const [signingIn, setSigningIn] = useState(false);
+  const me = data?.employee || null;
+
+  const connect = useCallback(async () => {
+    setSigningIn(true);
+    try {
+      const address = await requestAccount();
+      // Signing in does not depend on the network, and some wallets (Phantom) cannot
+      // add custom chains. Try to switch, but never block sign-in on it.
+      await ensureChain().catch(() => {});
+      const r = await fetch(`/api/auth/nonce?address=${address}`, { cache: "no-store" });
+      const { message } = await r.json();
+      if (!message) throw new WalletError("NONCE_FAILED", "Could not start sign-in. Try again.");
+      const signature = await signMessage(address, message);
+      await post("/api/auth/verify", { address, signature, message });
+      await reload();
+    } finally {
+      setSigningIn(false);
+    }
+  }, [reload]);
+
+  const disconnect = useCallback(async () => {
+    await post("/api/auth/logout").catch(() => {});
+    await reload();
+  }, [reload]);
+
+  // Switching accounts in the wallet must not leave the old session open.
+  useEffect(() => {
+    if (!me) return;
+    return onAccountsChanged((accounts) => {
+      if (accounts[0]?.toLowerCase() !== me.wallet) void disconnect();
+    });
+  }, [me, disconnect]);
+
+  return {
+    me,
+    wallet: me?.wallet ?? null,
+    ready: !!data,
+    loaded: !!data,
+    signingIn,
+    hasWallet: hasWallet(),
+    launch: data?.launch || null,
+    secsToEpoch: data?.secsToEpoch ?? null,
+    cooldown: data?.cooldown ?? 0,
+    connect,
+    disconnect,
+    reload,
+  };
 }
 
 export const ERRORS: Record<string, string> = {
@@ -87,4 +106,17 @@ export const ERRORS: Record<string, string> = {
   INVALID_PROOF: "Merkle proof did not verify against the published root.",
   WALLET_MISMATCH: "This wallet does not own that employee.",
   ALREADY_LAUNCHED: "Token already launched.",
+  NOT_AUTHENTICATED: "Your session expired. Connect your wallet again.",
+  NONCE_EXPIRED: "That sign-in request timed out. Try again.",
+  BAD_SIGNATURE: "The signature did not match that address.",
+  ADMIN_FORBIDDEN: "Wrong admin token.",
+  ADMIN_DISABLED: "The testnet console is disabled in this deployment.",
+  NO_WALLET: "No EVM wallet found. Install one, then reload this page.",
+  REJECTED: "You dismissed the wallet prompt.",
+  PENDING: "Your wallet has a pending request. Finish it there first.",
+};
+
+export const errorText = (e: unknown) => {
+  const code = e instanceof Error ? e.message : String(e);
+  return ERRORS[code] || (e instanceof WalletError ? e.message : code);
 };

@@ -1,11 +1,18 @@
 import { body, handle } from "@/lib/api";
+import { assertAdmin } from "@/lib/auth";
 import { claim, reorg, spawnTest } from "@/lib/engine/engine";
 import type { Profile } from "@/lib/engine/types";
 import { testnetView } from "@/lib/engine/views";
 export const dynamic = "force-dynamic";
-export const GET = handle(({ s, now }) => testnetView(s, now));
-// Testnet-only scenario controls (phase 6 of the brief).
+
+export const GET = handle(({ s, now }, req) => {
+  assertAdmin(req);
+  return testnetView(s, now);
+});
+
+// Testnet-only scenario controls (phase 6 of the brief). Admin token required.
 export const POST = handle(async ({ s, now }, req) => {
+  assertAdmin(req);
   const { action, profile } = await body(req);
   const out: any = {};
   if (action === "spawn") spawnTest(s, profile as Profile, now);

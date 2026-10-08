@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TestnetSkeleton } from "../Skeleton";
 import AppShell from "../AppShell";
-import { post, useApi } from "@/lib/client";
+import { errorText, post, useApi } from "@/lib/client";
 import { ago } from "@/lib/format";
 
 const PROFILES: [string, string, string][] = [
@@ -14,17 +14,60 @@ const PROFILES: [string, string, string][] = [
   ["wash", "Wash trading", "Self trades, circular flow, sybil cluster"],
   ["liqmanip", "Liquidity manipulation", "Liquidity in before close, out right after"],
 ];
+const TOKEN_KEY = "shift.admin.token";
 const card = { background: "#151A13", border: "1px solid #263023", borderRadius: 20, padding: 22 } as const;
 const btn = { background: "transparent", color: "#E9EDE2", font: "inherit", fontSize: 14, padding: "0 16px", minHeight: 44, border: "1px solid #3A4436", borderRadius: 999, cursor: "pointer" } as const;
 
 export default function TestnetPage() {
-  const { data, reload } = useApi<any>("/api/testnet");
+  const [token, setToken] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    try { setToken(localStorage.getItem(TOKEN_KEY) ?? ""); } catch { setToken(""); }
+  }, []);
+  const headers = token ? { "x-admin-token": token } : undefined;
+  const { data, error, reload } = useApi<any>(token === null ? null : "/api/testnet", 1000, false, headers);
   const [out, setOut] = useState<any>(null);
+
+  const saveToken = (v: string) => {
+    const t = v.trim();
+    try { localStorage.setItem(TOKEN_KEY, t); } catch {}
+    setToken(t);
+  };
+
+  if (error === "ADMIN_FORBIDDEN" || error === "ADMIN_DISABLED") {
+    return (
+      <AppShell active="" title="Testnet console">
+        <main style={{ padding: "clamp(20px,3vw,36px)", maxWidth: 560 }}>
+          <div style={{ ...card, padding: 24 }}>
+            <h2 style={{ margin: 0, fontSize: 18 }}>{error === "ADMIN_DISABLED" ? "Console disabled" : "Admin token required"}</h2>
+            <p style={{ margin: "8px 0 0", color: "#8E978A", fontSize: 14 }}>
+              {error === "ADMIN_DISABLED"
+                ? "This deployment has no ADMIN_TOKEN set, so the scenario controls stay closed."
+                : "These controls spawn employees and inject failures, so they are kept behind the ADMIN_TOKEN from the server env."}
+            </p>
+            {error === "ADMIN_FORBIDDEN" && (
+              <form onSubmit={(ev) => { ev.preventDefault(); saveToken(draft); }} style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+                <input type="password" value={draft} onChange={(ev) => setDraft(ev.target.value)} placeholder="Admin token" aria-label="Admin token"
+                  style={{ flex: "1 1 220px", minHeight: 44, padding: "0 14px", borderRadius: 999, border: "1px solid #3A4436", background: "#121710", color: "#E9EDE2", font: "inherit" }} />
+                <button type="submit" style={{ ...btn, background: "#C8F135", color: "#0F130E", border: 0, fontWeight: 600 }}>Unlock</button>
+              </form>
+            )}
+          </div>
+        </main>
+      </AppShell>
+    );
+  }
   if (!data) return <AppShell active="" title="Testnet console"><TestnetSkeleton /></AppShell>;
   const act = async (action: string, profile?: string) => {
-    const r = await post("/api/testnet", { action, profile });
-    setOut(r.tries ? { action, tries: r.tries, epoch: r.epoch } : null);
-    reload();
+    setErr("");
+    try {
+      const r = await post("/api/testnet", { action, profile }, headers);
+      setOut(r.tries ? { action, tries: r.tries, epoch: r.epoch } : null);
+      reload();
+    } catch (e: unknown) {
+      setErr(errorText(e));
+    }
   };
   const inv = data.invariants;
   const ok = inv.overpaidEpochs === 0 && inv.claimedMatchesLeaves;
@@ -86,6 +129,7 @@ export default function TestnetPage() {
             </div>
           </section>
         )}
+        {err && <p style={{ color: "#E0A44A", margin: 0 }}>{err}</p>}
         <section style={card}>
           <h2 style={{ margin: "0 0 12px", fontSize: 18 }}>Backend log</h2>
           <div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 12, color: "#8E978A", display: "grid", gap: 4 }}>

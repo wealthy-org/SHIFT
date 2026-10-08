@@ -5,7 +5,8 @@ import { Fragment, useEffect, useState } from "react";
 import { ClockInSkeleton } from "../Skeleton";
 import AppShell from "../AppShell";
 import { CHIP, EXPLORER, LIME, ago, explorerTx, mmss, ponsToken, short } from "@/lib/format";
-import { ERRORS, post, useApi, useMe } from "@/lib/client";
+import { errorText, post, useApi, useMe } from "@/lib/client";
+import { CHAIN, hasWallet as detectWallet } from "@/lib/wallet";
 
 const LABELS = ["Confirm in your wallet", "Submitting launch to Pons", "Waiting for confirmations", "Token live on Pons"];
 const STEPS = ["Connect wallet", "Get hired", "Launch on Pons", "Start shift"];
@@ -124,18 +125,12 @@ function OnTheClock({ emp, me, deskHref, reset, secsToEpoch }: any) {
 }
 
 export default function ClockInPage() {
-  const { wallet, ready, connect, disconnect, me, launch: lj, loaded, reload, secsToEpoch } = useMe(500);
+  const { wallet, connect, disconnect, me, launch: lj, loaded, signingIn, reload, secsToEpoch } = useMe(500);
   const [accepted, setAccepted] = useState(false);
   const [err, setErr] = useState("");
   const [k, setK] = useState(0);
-  const [asked, setAsked] = useState<string | null>(null);
+  const [walletPresent, setWalletPresent] = useState(true);
 
-  useEffect(() => {
-    if (wallet && loaded && !me && asked !== wallet) {
-      setAsked(wallet);
-      post("/api/clock-in", { wallet }).then(reload).catch((e) => setErr(e.message));
-    }
-  }, [wallet, loaded, me, asked, reload]);
 
   const launching = !!lj && !lj.done;
   const live = me?.launchStatus === "LIVE";
@@ -164,9 +159,9 @@ export default function ClockInPage() {
       border: cur ? "rgba(200,241,53,.5)" : "#222A20", bg: cur ? "rgba(200,241,53,.05)" : "transparent", fg: cur ? "#E9EDE2" : ok ? "#AEB7A8" : "#8E978A",
     };
   });
-  const booting = !ready || (!!wallet && !loaded);
+  const booting = !loaded;
   const s1 = step === 1 && !booting, s2 = step === 2 && !booting, s3 = step === 3 && !booting, s4 = step === 4 && !booting;
-  const hasWallet = !!wallet;
+  const connected = !!wallet;
   const showList = !!lj;
   const launchLabel = launching ? "Launching" : lj?.reverted ? "Try again" : "Launch on Pons";
   const launchBg = launching ? "#5F685B" : LIME, launchCursor = launching ? "not-allowed" : "pointer";
@@ -174,14 +169,15 @@ export default function ClockInPage() {
   const timer = mmss(shift?.elapsed ?? 0), snaps = shift?.snaps ?? 0;
   const run = async (fn: () => Promise<any>) => {
     setErr("");
-    try { await fn(); await reload(); } catch (e: any) { setErr(ERRORS[e.message] || e.message); }
+    try { await fn(); await reload(); } catch (e: unknown) { setErr(errorText(e)); }
   };
-  const doConnect = () => { connect(); };
+  const doConnect = () => run(connect);
   const accept = () => setAccepted(true);
   const doLaunch = () => { if (!launching && me) run(() => post("/api/launch", { employeeId: me.id, wallet })); };
-  const reset = () => { disconnect(); setAccepted(false); setAsked(null); };
+  const reset = () => { void disconnect(); setAccepted(false); };
   const launchError = lj?.reverted ? lj.error : "";
   const deskHref = me ? `/employee/${me.id}` : "/office";
+  useEffect(() => setWalletPresent(detectWallet()), []);
   
   return (
     <div className="sh" style={{ background: "#0F130E", color: "#E9EDE2", fontFamily: "'Geist', 'Helvetica Neue', Helvetica, sans-serif", fontSize: 17, lineHeight: 1.55, minHeight: "100vh", fontVariantNumeric: "tabular-nums" }}>
@@ -195,7 +191,7 @@ export default function ClockInPage() {
           </Link>
           <span style={{ flex: 1 }} />
           <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "#AEB7A8" }}><span className="live" style={{ width: 8, height: 8, borderRadius: "50%", background: "#C8F135", display: "inline-block" }} />Shift active</span>
-          {hasWallet && (
+          {connected && (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid #2E382A", borderRadius: 999, padding: "8px 14px", fontFamily: "'Geist Mono', monospace", fontSize: 13 }}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#C8F135", display: "inline-block" }} />{short(wallet)}
             </span>
@@ -213,18 +209,26 @@ export default function ClockInPage() {
 {s1 && (<>
 <section className="vin" style={{background: '#151A13', border: '1px solid #263023', borderRadius: '26px', padding: 'clamp(24px,4vw,48px)', maxWidth: '880px', marginLeft: 'auto', marginRight: 'auto'}}>
 <h1 style={{margin: '0', fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: 'clamp(44px,5vw,68px)', lineHeight: '0.95'}}>Connect your wallet</h1>
-<p style={{margin: '12px 0 0', color: '#AEB7A8', maxWidth: '52ch'}}>SHIFT runs on Robinhood Chain. Your wallet becomes your employee record, so connect the one you want paid.</p>
+<p style={{margin: '12px 0 0', color: '#AEB7A8', maxWidth: '52ch'}}>SHIFT runs on {CHAIN.name}. Your wallet becomes your employee record, so connect the one you want paid.</p>
+{walletPresent ? (<>
 <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', marginTop: '28px'}}>
-<button type="button" className="wopt" onClick={doConnect} style={{display: 'flex', alignItems: 'center', gap: '14px', padding: '18px', borderRadius: '16px', border: '1px solid #2E382A', background: '#121710', cursor: 'pointer', textAlign: 'left', minHeight: '72px', font: 'inherit', color: 'inherit'}}>
-<span style={{width: '40px', height: '40px', borderRadius: '10px', background: '#232B20', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none'}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C8F135" strokeWidth="1.8" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="3" /><path d="M16 12.5h2" /></svg></span>
-<span><span style={{display: 'block', fontWeight: '600'}}>Browser wallet</span><span style={{display: 'block', color: '#8E978A', fontSize: '14px'}}>Any injected EVM wallet</span></span>
-</button>
-<button type="button" className="wopt" onClick={doConnect} style={{display: 'flex', alignItems: 'center', gap: '14px', padding: '18px', borderRadius: '16px', border: '1px solid #2E382A', background: '#121710', cursor: 'pointer', textAlign: 'left', minHeight: '72px', font: 'inherit', color: 'inherit'}}>
-<span style={{width: '40px', height: '40px', borderRadius: '10px', background: '#232B20', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none'}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C8F135" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M5 9c4-4 10-4 14 0M8 12c2.4-2.4 5.6-2.4 8 0M11 15c.6-.6 1.4-.6 2 0" /></svg></span>
-<span><span style={{display: 'block', fontWeight: '600'}}>WalletConnect</span><span style={{display: 'block', color: '#8E978A', fontSize: '14px'}}>Scan with a mobile wallet</span></span>
+<button type="button" className="wopt" onClick={doConnect} disabled={signingIn} style={{display: 'flex', alignItems: 'center', gap: '14px', padding: '18px', borderRadius: '16px', border: '1px solid #2E382A', background: '#121710', cursor: signingIn ? 'progress' : 'pointer', textAlign: 'left', minHeight: '72px', font: 'inherit', color: 'inherit'}}>
+<span style={{width: '40px', height: '40px', borderRadius: '10px', background: '#232B20', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none'}}>
+{signingIn
+  ? <span className="spin" style={{width: '20px', height: '20px', borderRadius: '50%', border: '2px solid #C8F135', borderTopColor: 'transparent'}} />
+  : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C8F135" strokeWidth="1.8" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="3" /><path d="M16 12.5h2" /></svg>}
+</span>
+<span><span style={{display: 'block', fontWeight: '600'}}>{signingIn ? 'Check your wallet' : 'Browser wallet'}</span><span style={{display: 'block', color: '#8E978A', fontSize: '14px'}}>{signingIn ? 'Approve the connection, then sign to prove you own it' : 'Any injected EVM wallet'}</span></span>
 </button>
 </div>
-<p style={{margin: '18px 0 0', color: '#8E978A', fontSize: '13px'}}>Connecting only reads your address. Nothing is signed until you launch.</p>
+<p style={{margin: '18px 0 0', color: '#8E978A', fontSize: '13px'}}>You sign one message to prove the address is yours. It costs no gas and approves no transaction.{CHAIN.id ? ` Your wallet will be asked to switch to ${CHAIN.name}.` : ''}</p>
+</>) : (<>
+<div style={{marginTop: '28px', border: '1px dashed #3A4436', borderRadius: '16px', padding: '22px'}}>
+<div style={{fontWeight: '600'}}>No EVM wallet in this browser</div>
+<p style={{margin: '6px 0 0', color: '#8E978A', fontSize: '14px', maxWidth: '52ch'}}>Install a browser wallet such as MetaMask or Rabby, then reload this page. You can still look around the office without one.</p>
+<Link href="/office" className="btng" style={{textDecoration: 'none', color: '#E9EDE2', fontSize: '15px', padding: '0 20px', minHeight: '48px', marginTop: '16px', display: 'inline-flex', alignItems: 'center', border: '1px solid #3A4436', borderRadius: '999px'}}>See the office</Link>
+</div>
+</>)}
 </section>
 </>)}
 
@@ -294,7 +298,7 @@ export default function ClockInPage() {
 </>)}
 
 {s4 && <OnTheClock emp={emp} me={me} deskHref={deskHref} reset={reset} secsToEpoch={secsToEpoch} />}
-{(err || launchError) && <p style={{margin: '18px 0 0', color: '#E0A44A'}}>{err || launchError}</p>}
+{(err || launchError) && <p role="alert" style={{margin: '18px auto 0', maxWidth: '880px', color: '#E0A44A', textAlign: 'center'}}>{err || launchError}</p>}
 </main>
     </div>
   );
