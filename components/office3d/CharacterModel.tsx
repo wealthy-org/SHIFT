@@ -78,6 +78,8 @@ export type ModelApi = {
   update: (dt: number, t: number) => void;
   current: () => string;
   duration: (name: string) => number;
+  /** Show or hide the coffee cup held in the right hand. */
+  setCup: (on: boolean) => void;
 };
 
 export function useCharacterRig(id: number, look: Look) {
@@ -98,6 +100,18 @@ export function useCharacterRig(id: number, look: Look) {
       if (Array.isArray(m.material)) m.material = m.material.map((x) => tinted(x, outfit.colors));
       else m.material = tinted(m.material, outfit.colors);
     });
+
+    // A cup that lives on the right hand bone, hidden until someone fetches coffee.
+    const cup = new THREE.Group();
+    const cupBody = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.08, 10), new THREE.MeshStandardMaterial({ color: "#E4E7DA", roughness: 0.7 }));
+    const cupCoffee = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.005, 10), new THREE.MeshStandardMaterial({ color: "#3A2416" }));
+    cupCoffee.position.y = 0.04;
+    cup.add(cupBody, cupCoffee);
+    cup.position.set(0, 0.06, 0.02);
+    cup.rotation.set(Math.PI / 2, 0, 0.5); // upright when the forearm is raised
+    cup.scale.setScalar(1.2);
+    cup.visible = false;
+    root.getObjectByName("Hand_R")?.add(cup);
 
     const mixer = new THREE.AnimationMixer(root);
     const clips = new Map(gltf.animations.map((c) => [c.name, c]));
@@ -132,6 +146,7 @@ export function useCharacterRig(id: number, look: Look) {
       },
       current: () => curName,
       duration: (n) => clips.get(n)?.duration ?? 1,
+      setCup: (on) => { cup.visible = on; },
     };
     api.play("idle_breathe", { fade: 0 });
     return { root, api };

@@ -460,16 +460,22 @@ function Desk({ local, occupant, selected, onSelect, flashAt }: { local: number;
 // characters
 // ---------------------------------------------------------------------------
 
-type Target = { x: number; z: number; seat: boolean; face: number };
+type Target = { x: number; z: number; seat: boolean; face: number; pair?: number };
 
-function targetOf(e: OfficeEmployee, local: number, breakSpot: number, receptionSpot: number): Target {
+function targetOf(e: OfficeEmployee, local: number, breakSpot: number, receptionSpot: number, breakCount: number): Target {
   if ((e.pose === "working" || e.pose === "seated") && local >= 0) {
     const [x, z] = chairPos(local);
     return { x, z, seat: true, face: Math.PI };
   }
   if (e.pose === "break" && breakSpot >= 0) {
     const [x, z] = BREAK_SPOTS[breakSpot];
-    return { x, z, seat: false, face: Math.atan2(13.8 - x, 11.9 - z) };
+    // neighbours (spots 0+1, 2+3, ...) turn to face each other and take turns talking
+    const mate = breakSpot ^ 1;
+    if (mate < breakCount) {
+      const [mx, mz] = BREAK_SPOTS[mate];
+      return { x, z, seat: false, face: Math.atan2(mx - x, mz - z), pair: breakSpot & 1 };
+    }
+    return { x, z, seat: false, face: Math.atan2(13.8 - x, 11.9 - z), pair: -1 };
   }
   if (e.pose === "break" && local >= 0) {
     const [x, z] = chairPos(local);
@@ -484,7 +490,10 @@ const keyOf = (t: Target) => `${t.x.toFixed(2)},${t.z.toFixed(2)}`;
 
 type Mode = "stand" | "sitting" | "seated" | "standing";
 const WORK_SLOTS = ["typing_loop", "typing_loop", "mouse_click", "typing_loop", "read_screen", "typing_loop", "thinking", "typing_loop"];
-const BREAK_SLOTS = ["idle_breathe", "chat_talk", "chat_listen", "look_left_right", "chat_talk", "idle_breathe"];
+const BREAK_SOLO = ["idle_breathe", "look_left_right", "stretch", "idle_breathe", "look_left_right"];
+// Coffee run: three spots in front of the kitchenette counter, facing it (+x).
+const COFFEE_SPOTS: [number, number][] = [[16.1, 9.6], [16.1, 10.6], [16.1, 11.6]];
+const COFFEE_FACE = Math.PI / 2;
 const IDLE_SLOTS = ["idle_breathe", "look_left_right", "idle_breathe", "wave", "idle_breathe"];
 const SIT_SECS = 1.15;
 
@@ -507,6 +516,7 @@ function Character({
   const confetti = useRef<THREE.Group>(null);
   const model = useRef<ModelApi | null>(null);
   const fsm = useRef<{ mode: Mode; at: number; slot: number; celebrating: string }>({ mode: "stand", at: 0, slot: -1, celebrating: "" });
+  const br = useRef<{ phase: "none" | "go" | "pick" | "drink" | "put" | "back"; at: number; until: number; next: number; cupAt: number; cupOff: number }>({ phase: "none", at: 0, until: 0, next: 6 + (e.id % 7) * 3, cupAt: 0, cupOff: 0 });
   const [hover, setHover] = useState(false);
 
   const st = useRef<{ x: number; z: number; path: [number, number][]; face: number; walking: boolean; key: string }>(null as any);
@@ -521,6 +531,8 @@ function Character({
     const s = st.current;
     if (s.key === key) return;
     s.key = key;
+    br.current.phase = "none";
+    model.current?.setCup(false);
     if (reduced) {
       s.x = target.x;
       s.z = target.z;
@@ -579,13 +591,37 @@ function Character({
     const arrived = !s.path.length;
     if (arrived) {
       // turn to the desk or the room once there
-      let df = target.face - s.face;
+      const atCoffee = br.current.phase === "pick" || br.current.phase === "drink" || br.current.phase === "put";
+      let df = (atCoffee ? COFFEE_FACE : target.face) - s.face;
       df = Math.atan2(Math.sin(df), Math.cos(df));
       s.face += df * Math.min(1, dt * 8);
     }
     g.position.set(s.x, 0, s.z);
     g.rotation.y = s.face;
     posOut.set(e.id, g.position);
+
+    // coffee run for people on break: walk to the counter, grab a cup, drink, put it back, return
+    const b = br.current;
+    const canCoffee = !!m && !reduced && !frozen && f.mode === "stand" && e.pose === "break" && !target.seat && !cheering && !paying;
+    if (!canCoffee && b.phase !== "none") { b.phase = "none"; m?.setCup(false); }
+    if (canCoffee && m) {
+      const spot = COFFEE_SPOTS[e.id % COFFEE_SPOTS.length];
+      if (b.phase === "none" && t > b.next && !s.path.length) { b.phase = "go"; s.path = route([s.x, s.z], spot); }
+      else if (b.phase === "go" && !s.path.length) {
+        b.phase = "pick"; b.at = t; b.until = t + m.duration("coffee_pickup"); b.cupAt = t + m.duration("coffee_pickup") * 0.5;
+        m.play("coffee_pickup", { once: true, fade: 0.15 });
+      } else if (b.phase === "pick") {
+        if (t > b.cupAt) m.setCup(true);
+        if (t > b.until) { b.phase = "drink"; b.cupAt = 0; b.until = t + m.duration("drink_coffee") * 2; m.play("drink_coffee", { once: true, fade: 0.1 }); b.at = t; }
+      } else if (b.phase === "drink") {
+        if (b.cupAt >= 0 && t - b.at > m.duration("drink_coffee")) { b.cupAt = -1; m.play("drink_coffee", { once: true, fade: 0.1 }); }
+        if (t > b.until) { b.phase = "put"; b.until = t + m.duration("coffee_putdown"); b.cupOff = t + m.duration("coffee_putdown") * 0.5; m.play("coffee_putdown", { once: true, fade: 0.1 }); }
+      } else if (b.phase === "put") {
+        if (t > b.cupOff) m.setCup(false);
+        if (t > b.until) { b.phase = "back"; f.slot = -1; s.path = route([s.x, s.z], [target.x, target.z]); }
+      } else if (b.phase === "back" && !s.path.length) { b.phase = "none"; b.next = t + 22 + (e.id % 5) * 4; f.slot = -1; }
+    }
+    const busy = b.phase === "pick" || b.phase === "drink" || b.phase === "put";
 
     // choose the looping clip once sit/stand transitions are done
     if (m) {
@@ -595,15 +631,21 @@ function Character({
         const slot = Math.floor((t + e.id * 3.7) / 8);
         if (cheering && f.celebrating !== "c") { f.celebrating = "c"; m.play("celebrate_promotion", { once: true, fade: 0.15 }); }
         else if (paying && !cheering && f.celebrating !== "p") { f.celebrating = "p"; m.play("payday_reaction", { once: true, fade: 0.15 }); }
-        else if (!cheering && !paying) {
+        else if (!cheering && !paying && !busy) {
           if (f.celebrating) { f.celebrating = ""; f.slot = -1; }
           if (s.walking) m.play("walk", { speed: SPEED / 0.64, fade: 0.15 });
           else if (f.mode === "seated") {
             if (f.slot !== slot) { f.slot = slot; m.play(e.pose === "working" ? WORK_SLOTS[slot % WORK_SLOTS.length] : "seated_idle", { fade: 0.3 }); }
           } else if (f.slot !== slot || m.current() === "walk") {
             f.slot = slot;
-            const list = e.pose === "break" ? BREAK_SLOTS : IDLE_SLOTS;
-            m.play(list[slot % list.length], { fade: 0.3 });
+            if (e.pose === "break" && target.pair !== undefined && target.pair >= 0) {
+              // take turns: one talks while the other listens, with the odd look around
+              const turn = slot % 5;
+              m.play(turn === 4 ? "look_left_right" : (turn + target.pair) % 2 === 0 ? "chat_talk" : "chat_listen", { fade: 0.3 });
+            } else {
+              const list = e.pose === "break" ? BREAK_SOLO : IDLE_SLOTS;
+              m.play(list[slot % list.length], { fade: 0.3 });
+            }
           }
         }
       }
@@ -807,11 +849,12 @@ function World(props: SceneProps) {
     const here = scene.employees.filter((e) => (e.desk >= 0 ? Math.floor(e.desk / per) === floor : floor === 0));
     let b = 0;
     let r = 0;
+    const breakCount = Math.min(BREAK_SPOTS.length, here.filter((x) => x.pose === "break").length);
     return here.map((e) => {
       const local = e.desk >= 0 ? e.desk % per : -1;
       const breakSpot = e.pose === "break" && b < BREAK_SPOTS.length ? b++ : -1;
       const receptionSpot = e.pose === "reception" ? r++ : -1;
-      return { e, local, target: targetOf(e, local, breakSpot, receptionSpot) };
+      return { e, local, target: targetOf(e, local, breakSpot, receptionSpot, breakCount) };
     });
   }, [scene.employees, floor, per]);
 
