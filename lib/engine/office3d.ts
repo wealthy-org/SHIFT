@@ -3,16 +3,10 @@
 import { CONFIG, RANK_NAMES } from "./config";
 import { blockAt, epochOf, getEpoch } from "./engine";
 import type { ChainEvent, Employee, State } from "./types";
-import { seedOf } from "./util";
+import { lookOf } from "./look";
 import { deskOf, estimate, statusOf } from "./views";
 
 export const DESKS_PER_FLOOR = 16;
-
-// Distinct generated looks. Picked deterministically from the employee id, so a
-// person looks the same on every refresh and on every screen.
-const SHIRTS = ["#3E5A8A", "#8A4F3E", "#4E7A5A", "#7A6A3E", "#5A4E7A", "#2F6F6F", "#9A5B6F", "#6B7A3E", "#3E6E8A", "#8A6E3E", "#5E5E66", "#7A3E4E"];
-const SKINS = ["#F1C9A5", "#D9A47E", "#B57A55", "#8A5A3C", "#6B4430", "#E8B894"];
-const HAIR = ["#1E1A16", "#3B2A1E", "#6B4A2B", "#C9A15A", "#2C2C30", "#8A3B2A", "#D8D2C4"];
 
 export type Pose = "reception" | "working" | "break" | "seated";
 
@@ -26,17 +20,6 @@ const OFFICE_TYPE: Record<string, string> = {
   "Payroll Claimed": "payroll.claimed",
   "Shift Invalidated": "state.reverted",
 };
-
-function lookOf(e: Employee) {
-  const h = seedOf(`look:${e.employeeId}:${e.wallet}`);
-  return {
-    shirt: SHIRTS[h % SHIRTS.length],
-    skin: SKINS[(h >>> 4) % SKINS.length],
-    hair: HAIR[(h >>> 8) % HAIR.length],
-    style: (h >>> 12) % 4,
-    acc: (h >>> 16) % 3,
-  };
-}
 
 function poseOf(s: State, e: Employee): { pose: Pose; pending: boolean } {
   if (e.launchStatus === "LAUNCHING") return { pose: "reception", pending: true };

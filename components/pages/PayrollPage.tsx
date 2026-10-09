@@ -6,6 +6,10 @@ import { PayrollSkeleton } from "../Skeleton";
 import AppShell from "../AppShell";
 import { CHIP, EXPLORER, LIME, ago, explorerTx, mmss, ponsToken, short } from "@/lib/format";
 import { errorText, post, useApi, useMe } from "@/lib/client";
+import { fallbackLook } from "../office3d/mini/fallbackLook";
+import { useLazyComponent } from "../office3d/mini/useLazy";
+
+const loadPayday = () => import("../office3d/mini/Payday");
 
 const SN = ["Estimated", "Finalized", "Claimable", "Paid"];
 const TX = ["Projected from the live shift. Can still change.", "Epoch closed, Merkle root published onchain.", "Your proof is ready. Claim whenever you like.", "Sent to your wallet, Payroll Claimed emitted."];
@@ -16,6 +20,8 @@ export default function PayrollPage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [shown, setShown] = useState(true);
+  const [coinsAt, setCoinsAt] = useState(0);
+  const PaydayC = useLazyComponent(loadPayday, !!data && !!me);
   if (!data) return <AppShell active="payroll" title="Payroll"><PayrollSkeleton /></AppShell>;
   const stage = data.stage;
   const f = data.focus;
@@ -42,9 +48,10 @@ export default function PayrollPage() {
   const claim = async () => {
     if (!me || stage !== 2) return;
     setBusy(true); setErr("");
-    try { await post("/api/payroll/claim", { employeeId: me.id, epochId: f.epochId }); setShown(true); await reload(); } catch (e: unknown) { setErr(errorText(e)); }
+    try { await post("/api/payroll/claim", { employeeId: me.id, epochId: f.epochId }); setShown(true); setCoinsAt(performance.now()); await reload(); } catch (e: unknown) { setErr(errorText(e)); }
     setBusy(false);
   };
+  const paydayAnim = paid && performance.now() - coinsAt < 3200 ? "cheer" : stage === 2 ? "bow" : "idle";
   const replay = () => setShown(false);
   return (
     <AppShell active="payroll" title="Payroll">
@@ -63,6 +70,7 @@ export default function PayrollPage() {
 <span style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '900', fontSize: '42px', letterSpacing: '0.04em', lineHeight: '1'}}>PAYDAY</span>
 <span style={{fontSize: '14px', color: '#4A5146'}}>Epoch {epochId}, {empName}</span>
 </div>
+{me && PaydayC && <PaydayC look={me.look || fallbackLook()} anim={paydayAnim} coinsAt={coinsAt} />}
 <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '22px', marginTop: '22px'}}>
 <div><div style={{fontSize: '13px', color: '#5A6156'}}>Payroll pool</div><div style={{fontSize: '30px', fontWeight: '600'}}>{poolStr} ETH</div></div>
 <div><div style={{fontSize: '13px', color: '#5A6156'}}>Your shares</div><div style={{fontSize: '30px', fontWeight: '600'}}>{sharesStr}</div></div>

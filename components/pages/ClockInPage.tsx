@@ -7,6 +7,12 @@ import AppShell from "../AppShell";
 import { CHIP, EXPLORER, LIME, ago, explorerTx, mmss, ponsToken, short } from "@/lib/format";
 import { errorText, post, useApi, useMe } from "@/lib/client";
 import { CHAIN, hasWallet as detectWallet } from "@/lib/wallet";
+import { fallbackLook } from "../office3d/mini/fallbackLook";
+import { useLazyComponent } from "../office3d/mini/useLazy";
+
+// Only fetched once actually needed (wallet connected / shift reached), not on
+// the plain "connect your wallet" view most visitors never get past.
+const loadAvatarBadge = () => import("../office3d/mini/AvatarBadge");
 
 const LABELS = ["Confirm in your wallet", "Submitting launch to Pons", "Waiting for confirmations", "Token live on Pons"];
 const STEPS = ["Connect wallet", "Get hired", "Launch on Pons", "Start shift"];
@@ -31,6 +37,7 @@ function Spark({ v, color, max }: { v: number[]; color: string; max: number }) {
 }
 
 function OnTheClock({ emp, me, deskHref, reset, secsToEpoch }: any) {
+  const AvatarBadgeC = useLazyComponent(loadAvatarBadge, true);
   const sh = emp?.shift;
   if (!sh) return <section className="vin" style={{ ...card, padding: 32, color: "#AEB7A8" }}>Starting your shift…</section>;
   const el: number = sh.elapsed;
@@ -61,7 +68,7 @@ function OnTheClock({ emp, me, deskHref, reset, secsToEpoch }: any) {
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 22 }}>
-          <svg width="52" height="52" viewBox="0 0 44 44" aria-hidden="true" style={{ flex: "none" }}><rect width="44" height="44" rx="11" fill={me?.c1} /><circle cx="22" cy="17" r="8" fill={me?.c2} /><rect x="9" y="28" width="26" height="16" rx="8" fill={me?.c2} /></svg>
+          <div style={{ width: 56, height: 56, flex: "none" }}>{AvatarBadgeC && <AvatarBadgeC look={me?.look || fallbackLook()} anim={sh?.status === "ACTIVE" ? "typing" : "idle"} />}</div>
           <div><div style={{ fontWeight: 600, fontSize: 20, lineHeight: 1.2 }}>{me?.name}</div><div style={{ fontFamily: "'Geist Mono', monospace", fontSize: 13, color: LIME }}>{me?.ticker} <span style={{ color: "#8E978A" }}>live on Pons · {short(me?.token)}</span></div></div>
         </div>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 14, marginTop: 18, flexWrap: "wrap" }}>
@@ -161,6 +168,7 @@ export default function ClockInPage() {
   });
   const booting = !loaded;
   const s1 = step === 1 && !booting, s2 = step === 2 && !booting, s3 = step === 3 && !booting, s4 = step === 4 && !booting;
+  const AvatarBadgeC = useLazyComponent(loadAvatarBadge, s2);
   const connected = !!wallet;
   const showList = !!lj;
   const launchLabel = launching ? "Launching" : lj?.reverted ? "Try again" : "Launch on Pons";
@@ -240,7 +248,7 @@ export default function ClockInPage() {
 <div className="bin" style={{background: '#1D231B', border: '1px solid #39442F', borderRadius: '18px', padding: '18px', maxWidth: '320px', boxShadow: '0 30px 70px rgba(0,0,0,.5)'}}>
 <div style={{width: '46px', height: '8px', borderRadius: '4px', background: '#0F130E', margin: '0 auto 16px'}} />
 <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-<svg width="56" height="56" viewBox="0 0 44 44" aria-hidden="true"><rect width="44" height="44" rx="11" fill="#E4E7DA" /><circle cx="22" cy="17" r="8" fill="#0F130E" /><rect x="9" y="28" width="26" height="16" rx="8" fill="#0F130E" /><rect x="18" y="15" width="3" height="3" fill="#E4E7DA" /><rect x="24" y="15" width="3" height="3" fill="#E4E7DA" /></svg>
+<div style={{width: '72px', height: '72px', flex: 'none'}}>{AvatarBadgeC && <AvatarBadgeC look={me?.look || fallbackLook()} anim="wave" />}</div>
 <div><div style={{fontWeight: '600', fontSize: '18px'}}>{name}</div><div style={{fontFamily: "'Geist Mono', monospace", fontSize: '13px', color: '#C8F135'}}>{me?.ticker}</div></div>
 </div>
 <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginTop: '16px', fontSize: '12px', color: '#8E978A'}}>

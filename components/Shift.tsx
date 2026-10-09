@@ -1,6 +1,24 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import { useLazyComponent } from "./office3d/mini/useLazy";
+
+const loadOfficeTeaser = () => import("./office3d/mini/OfficeTeaser");
+
+// Loads the 3D teaser only once it is about to scroll into view, so a visitor
+// who never scrolls past the hero never pays for three.js at all.
+function useNearViewport<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || near) return;
+    const io = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && setNear(true), { rootMargin: "400px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [near]);
+  return [ref, near] as const;
+}
 
 const mmss = (sec: number) => {
   sec = Math.max(0, Math.floor(sec));
@@ -60,6 +78,8 @@ export default function Shift() {
   const [now, setNow] = useState<number | null>(null);
   const [selected, setSelected] = useState(0);
   const [claimedAt, setClaimedAt] = useState<number | null>(null);
+  const [teaserRef, teaserNear] = useNearViewport<HTMLDivElement>();
+  const OfficeTeaserC = useLazyComponent(loadOfficeTeaser, teaserNear);
 
   useEffect(() => {
     setNow(Date.now());
@@ -372,7 +392,11 @@ Shift active
 <p style={{margin: '0', color: '#AEB7A8', maxWidth: '46ch'}}>Every desk is an employee and every employee is a live Pons market. Pick a desk to see who's working it and how the shift is going.</p>
 </div>
 
-<div style={{marginTop: '48px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px'}}>
+<div ref={teaserRef} style={{marginTop: '32px', background: '#101511', border: '1px solid #222A20', borderRadius: '20px', overflow: 'hidden'}}>
+{OfficeTeaserC ? <OfficeTeaserC /> : <div style={{height: 220}} />}
+</div>
+
+<div style={{marginTop: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px'}}>
 {desks.map((e, i) => (<Fragment key={i}>
 <button type="button" className="desk" onClick={e.pick} aria-pressed={e.pressed} style={{textAlign: 'left', font: 'inherit', color: 'inherit', cursor: 'pointer', background: e.bg, border: `1px solid ${e.border}`, borderRadius: '18px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px', minHeight: '210px'}}>
 <span style={{display: 'flex', alignItems: 'center', gap: '12px', width: '100%'}}>

@@ -5,6 +5,7 @@ import { blockAt, epochOf, getEpoch, leafProof, shareOf } from "./engine";
 import { holderCount, marketCap } from "./market";
 import { scoreShift } from "./scoring";
 import type { Employee, Epoch, Shift, State } from "./types";
+import { lookOf } from "./look";
 import { eth, short } from "./util";
 
 const lastShift = (s: State, e: Employee): Shift | undefined => s.shifts[e.shiftIds[e.shiftIds.length - 1]];
@@ -89,7 +90,7 @@ export function meView(s: State, wallet: string, now: number) {
   const e = s.employees[id];
   const l = s.launches[id];
   return {
-    employee: { id, code: e.code, name: e.displayName, ticker: e.ticker, c1: e.avatar[0], c2: e.avatar[1], dept: e.department, badge: e.badge, wallet: e.wallet, token: e.tokenAddress || null, market: e.ponsMarketAddress || null, rank: RANK_NAMES[e.currentRank], launchStatus: e.launchStatus, hasShift: !!e.activeShiftId },
+    employee: { id, code: e.code, name: e.displayName, ticker: e.ticker, c1: e.avatar[0], c2: e.avatar[1], look: lookOf(e), dept: e.department, badge: e.badge, wallet: e.wallet, token: e.tokenAddress || null, market: e.ponsMarketAddress || null, rank: RANK_NAMES[e.currentRank], launchStatus: e.launchStatus, hasShift: !!e.activeShiftId },
     launch: l ? { step: l.step, confirmations: l.confirmations, done: l.done, reverted: l.reverted, error: l.error || null } : null,
     secsToEpoch: Math.max(0, Math.round((getEpoch(s, epochOf(s, now)).endTime - now) / 1000)),
     cooldown: e.lastShiftEndedAt ? Math.max(0, Math.ceil((CONFIG.userCooldownSeconds * 1000 - (now - e.lastShiftEndedAt)) / 1000)) : 0,
@@ -117,7 +118,7 @@ export function employeeView(s: State, id: number, now: number) {
   const lr = lastValid(s, e);
   return {
     now,
-    me: { id, code: e.code, name: e.displayName, ticker: e.ticker, c1: e.avatar[0], c2: e.avatar[1], dept: e.department, wallet: e.wallet, token: e.tokenAddress, market: e.ponsMarketAddress, test: e.testLabel || null, sim: e.bot || !!e.testLabel, profile: e.profile },
+    me: { id, code: e.code, name: e.displayName, ticker: e.ticker, c1: e.avatar[0], c2: e.avatar[1], look: lookOf(e), dept: e.department, wallet: e.wallet, token: e.tokenAddress, market: e.ponsMarketAddress, test: e.testLabel || null, sim: e.bot || !!e.testLabel, profile: e.profile },
     status: statusOf(s, e, now), rank: RANK_NAMES[act ? rankFor(live) : e.currentRank], best: RANK_NAMES[best], launchStatus: e.launchStatus,
     shift: sh ? {
       id: sh.shiftId, code: sh.code, status: sh.status, active: !!act, done, elapsed: el, left: CONFIG.shiftSeconds - el, snaps: snaps.length, missing: sh.missing,
@@ -160,7 +161,7 @@ export function leaderboardView(s: State, now: number, view: string, sort: strin
       const sum = (f: (x: Shift) => number) => w.reduce((a, x) => a + f(x), 0);
       r = { score: sum((x) => x.performanceScore) / w.length, mcap: sum((x) => x.averageMarketCap) / w.length, vol: sum((x) => x.volume), pay: eth(sum((x) => x.payrollAmount)), best: Math.max(...w.map((x) => x.finalRank)) };
     }
-    rows.push({ id: e.employeeId, name: e.displayName, ticker: e.ticker, c1: e.avatar[0], c2: e.avatar[1], test: e.testLabel || null, sim: e.bot || !!e.testLabel, shifts: e.totalShifts, ...r });
+    rows.push({ id: e.employeeId, name: e.displayName, ticker: e.ticker, c1: e.avatar[0], c2: e.avatar[1], look: lookOf(e), test: e.testLabel || null, sim: e.bot || !!e.testLabel, shifts: e.totalShifts, ...r });
   }
   const key = { "Performance score": "score", "Payroll earned": "pay", "Highest rank": "best", "Average market cap": "mcap", Volume: "vol" }[sort as string] || "score";
   rows.sort((a, b) => b[key] - a[key] || b.score - a.score);

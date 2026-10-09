@@ -6,6 +6,11 @@ import { ProfileSkeleton } from "../Skeleton";
 import AppShell from "../AppShell";
 import { CHIP, EXPLORER, LIME, ago, explorerTx, mmss, ponsToken, short } from "@/lib/format";
 import { errorText, post, useApi, useMe } from "@/lib/client";
+import { fallbackLook } from "../office3d/mini/fallbackLook";
+import { useLazyComponent } from "../office3d/mini/useLazy";
+
+const loadAvatarBadge = () => import("../office3d/mini/AvatarBadge");
+const loadDesk = () => import("../office3d/mini/Desk");
 
 const W = 560;
 const H = 170;
@@ -33,6 +38,8 @@ export default function ProfilePage({ id }: { id: number }) {
       if (v) setDismissed(Number(v));
     } catch {}
   }, [id]);
+  const AvatarBadgeC = useLazyComponent(loadAvatarBadge, !!data);
+  const DeskC = useLazyComponent(loadDesk, !!data);
   if (!data) return <AppShell active="desk" title="My desk"><ProfileSkeleton /></AppShell>;
   const mine = me && me.id === id;
   const { name, ticker, code, dept, wallet, token } = data.me;
@@ -129,7 +136,7 @@ export default function ProfilePage({ id }: { id: number }) {
     </>}>
 <main className="vin" style={{padding: 'clamp(20px,3vw,36px)', maxWidth: '1800px', margin: '0 auto'}}>
 <section style={{display: 'flex', flexWrap: 'wrap', gap: '20px 28px', alignItems: 'center', background: '#151A13', border: '1px solid #263023', borderRadius: '24px', padding: '24px'}}>
-<svg width="84" height="84" viewBox="0 0 44 44" aria-hidden="true" style={{flex: 'none'}}><rect width="44" height="44" rx="11" fill="#E4E7DA" /><circle cx="22" cy="17" r="8" fill="#0F130E" /><rect x="9" y="28" width="26" height="16" rx="8" fill="#0F130E" /><rect x="18" y="15" width="3" height="3" fill="#E4E7DA" /><rect x="24" y="15" width="3" height="3" fill="#E4E7DA" /></svg>
+<div style={{width: '84px', height: '84px', flex: 'none'}}>{AvatarBadgeC && <AvatarBadgeC look={data.me.look || fallbackLook()} anim={status === 'WORKING' ? 'typing' : status === 'PROMOTED' ? 'cheer' : 'idle'} />}</div>
 <div style={{flex: '1 1 320px'}}>
 <h2 style={{margin: '0', fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: 'clamp(42px,4.5vw,58px)', lineHeight: '0.95'}}>{name}</h2>
 <div style={{display: 'flex', flexWrap: 'wrap', gap: '6px 18px', fontSize: '14px', color: '#8E978A', marginTop: '8px'}}>
@@ -150,6 +157,7 @@ export default function ProfilePage({ id }: { id: number }) {
 <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: '16px', marginTop: '16px', alignItems: 'stretch'}}>
 <section style={{background: '#151A13', border: '1px solid #263023', borderRadius: '24px', padding: '24px'}}>
 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px'}}><span style={{fontWeight: '600'}}>{shiftState}</span><span style={{fontSize: '13px', color: '#8E978A'}}>Time left <span style={{color: '#E9EDE2', fontWeight: '600'}}>{left}</span></span></div>
+<div style={{margin: '14px -24px 0', borderTop: '1px solid #222A20', borderBottom: '1px solid #222A20'}}>{DeskC ? <DeskC look={data.me.look || fallbackLook()} ticker={data.me.ticker} score={sh?.score ?? 0} working={!!sh?.active} /> : <div style={{height: 230}} />}</div>
 <div style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '900', fontSize: 'clamp(80px,8vw,112px)', lineHeight: '0.9', marginTop: '14px'}}>{timer}</div>
 <div style={{fontSize: '13px', color: '#8E978A'}}>of 05:00, snapshot every 20 seconds</div>
 <div style={{height: '4px', borderRadius: '2px', background: '#232B20', marginTop: '18px', overflow: 'hidden'}}><div className="tr" style={{height: '100%', width: `${pct}%`, background: '#C8F135'}} /></div>
