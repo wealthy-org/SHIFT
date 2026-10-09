@@ -17,10 +17,10 @@ import { MiniCanvas } from "./MiniCanvas";
 const DESKS: { x: number; z: number; look: Look; anim: AvatarAnim }[] = [
   { x: -1.9, z: -0.9, look: { shirt: "#C8F135", skin: "#D9A47E", hair: "#1E1A16", style: 0, acc: 0 }, anim: "typing" },
   { x: 0, z: -0.9, look: { shirt: "#8A4F3E", skin: "#F1C9A5", hair: "#6B4A2B", style: 1, acc: 1 }, anim: "typing" },
-  { x: 1.9, z: -0.9, look: { shirt: "#2F6F6F", skin: "#8A5A3C", hair: "#2C2C30", style: 2, acc: 0 }, anim: "idle" },
+  { x: 1.9, z: -0.9, look: { shirt: "#2F6F6F", skin: "#8A5A3C", hair: "#2C2C30", style: 2, acc: 0 }, anim: "seated" },
   { x: -1.9, z: 0.9, look: { shirt: "#5A4E7A", skin: "#E8B894", hair: "#C9A15A", style: 3, acc: 0 }, anim: "typing" },
   { x: 0, z: 0.9, look: { shirt: "#9A5B6F", skin: "#B57A55", hair: "#8A3B2A", style: 0, acc: 2 }, anim: "typing" },
-  { x: 1.9, z: 0.9, look: { shirt: "#3E6E8A", skin: "#6B4430", hair: "#D8D2C4", style: 1, acc: 0 }, anim: "idle" },
+  { x: 1.9, z: 0.9, look: { shirt: "#3E6E8A", skin: "#6B4430", hair: "#D8D2C4", style: 1, acc: 0 }, anim: "seated" },
 ];
 
 const PALETTE = {
@@ -53,12 +53,14 @@ function Desk({ x, z, look, anim, deskColor }: { x: number; z: number; look: Loo
   const glow = anim === "typing";
   return (
     <group position={[x, 0, z]}>
-      <mesh geometry={G.box} material={top} position={[0, 0.36, -0.36]} scale={[0.95, 0.05, 0.52]} castShadow receiveShadow />
+      <mesh geometry={G.box} material={top} position={[0, 0.425, -0.36]} scale={[0.95, 0.05, 0.52]} castShadow receiveShadow />
+      <mesh geometry={G.box} material={mat(deskColor)} position={[-0.42, 0.21, -0.36]} scale={[0.04, 0.42, 0.44]} />
+      <mesh geometry={G.box} material={mat(deskColor)} position={[0.42, 0.21, -0.36]} scale={[0.04, 0.42, 0.44]} />
       {/* monitor, facing the avatar */}
-      <mesh geometry={G.box} material={monitorBody} position={[0, 0.58, -0.48]} scale={[0.36, 0.22, 0.03]} castShadow />
-      <mesh geometry={G.box} material={glow ? screen : screenOff} position={[0, 0.58, -0.465]} scale={[0.3, 0.16, 0.012]} />
-      <mesh geometry={G.box} material={monitorBody} position={[0, 0.44, -0.48]} scale={[0.03, 0.08, 0.02]} />
-      {glow && <pointLight position={[0, 0.58, -0.4]} color={LIME} intensity={0.9} distance={1.2} decay={2} />}
+      <mesh geometry={G.box} material={monitorBody} position={[0, 0.67, -0.48]} scale={[0.36, 0.22, 0.03]} castShadow />
+      <mesh geometry={G.box} material={glow ? screen : screenOff} position={[0, 0.67, -0.465]} scale={[0.3, 0.16, 0.012]} />
+      <mesh geometry={G.box} material={monitorBody} position={[0, 0.51, -0.48]} scale={[0.03, 0.08, 0.02]} />
+      {glow && <pointLight position={[0, 0.67, -0.4]} color={LIME} intensity={0.35} distance={1.0} decay={2} />}
       {/* avatar faces the desk, not away from it */}
       <group rotation={[0, Math.PI, 0]}>
         <AvatarMesh look={look} anim={anim} />
@@ -70,7 +72,7 @@ function Desk({ x, z, look, anim, deskColor }: { x: number; z: number; look: Loo
 export default function HeroOffice({ theme = "dark" }: { theme?: Theme }) {
   const p = PALETTE[theme];
   return (
-    <MiniCanvas height="100%" camera={[0.5, 4.3, 6.3]} fov={30} autoRotate autoRotateSpeed={1.3} controls bg={p.bg}>
+    <MiniCanvas height="100%" camera={[0.3, 5.4, 11.6]} fov={30} autoRotate autoRotateSpeed={1.3} controls bg={p.bg}>
       <mesh geometry={G.box} material={mat(p.floor, { rough: 0.95 })} position={[0, -0.05, 0]} scale={[5.6, 0.1, 2.8]} receiveShadow />
       <FloorLabel color={p.label} />
       {DESKS.map((d, i) => (

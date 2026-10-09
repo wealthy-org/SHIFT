@@ -5,7 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "shift": "node bin/shift.mjs"
+  },
+  "bin": {
+    "shift": "./bin/shift.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",

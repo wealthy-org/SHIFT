@@ -56,22 +56,22 @@ export default function Desk({ look, ticker, score, working, theme = "dark" }: {
   return (
     <MiniCanvas height={230} camera={[2.2, 1.0, 2.7]} fov={34} bg={p.bg}>
       <group position={[0, -0.6, 0]}>
-        <mesh geometry={G.box} material={top} position={[0, 0.72, 0]} scale={[1.3, 0.05, 0.72]} castShadow receiveShadow />
-        <mesh geometry={G.box} material={leg} position={[-0.58, 0.36, 0]} scale={[0.05, 0.72, 0.62]} />
-        <mesh geometry={G.box} material={leg} position={[0.58, 0.36, 0]} scale={[0.05, 0.72, 0.62]} />
-        <group position={[0, 1.02, -0.2]}>
+        <mesh geometry={G.box} material={top} position={[0, 0.5, 0]} scale={[1.3, 0.05, 0.72]} castShadow receiveShadow />
+        <mesh geometry={G.box} material={leg} position={[-0.58, 0.25, 0]} scale={[0.05, 0.5, 0.62]} />
+        <mesh geometry={G.box} material={leg} position={[0.58, 0.25, 0]} scale={[0.05, 0.5, 0.62]} />
+        <group position={[0, 0.8, -0.2]}>
           <mesh geometry={G.box} material={mat("#0F130E")} position={[0, 0, 0]} scale={[0.62, 0.38, 0.04]} />
           <MonitorScreen ticker={ticker} score={score} working={working} />
           <mesh geometry={G.box} material={leg} position={[0, -0.24, 0]} scale={[0.05, 0.12, 0.04]} />
         </group>
-        <group position={[0, 0, 0.78]}>
-          <mesh geometry={G.box} material={mat("#1D231B")} position={[0, 0.44, 0]} scale={[0.44, 0.07, 0.42]} />
-          <mesh geometry={G.box} material={mat("#1D231B")} position={[0, 0.74, 0.2]} scale={[0.44, 0.52, 0.06]} />
+        <group position={[0, 0, 0.46]}>
+          <mesh geometry={G.box} material={mat("#1D231B")} position={[0, 0.265, 0]} scale={[0.5, 0.07, 0.46]} />
+          <mesh geometry={G.box} material={mat("#1D231B")} position={[0, 0.58, 0.22]} scale={[0.5, 0.5, 0.06]} />
         </group>
-        <group position={[0, 0, 0.78]} rotation={[0, Math.PI, 0]}>
-          <AvatarMesh look={look} anim={working ? "typing" : "idle"} />
+        <group position={[0, 0, 0.46]} rotation={[0, Math.PI, 0]}>
+          <AvatarMesh look={look} anim={working ? "typing" : "seated"} chair={false} scale={1} />
         </group>
-        {working && <pointLight position={[0, 1.05, -0.05]} color={LIME} intensity={0.8} distance={1.6} decay={2} />}
+        {working && <pointLight position={[0, 0.85, -0.05]} color={LIME} intensity={0.8} distance={1.6} decay={2} />}
       </group>
     </MiniCanvas>
   );

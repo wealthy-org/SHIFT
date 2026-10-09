@@ -2,11 +2,13 @@
 
 import { Edges, Html, OrbitControls, RoundedBox } from "@react-three/drei";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { createContext, memo, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, createContext, memo, useContext, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { OfficeEmployee, OfficeScene as Scene } from "@/lib/engine/office3d";
 import { BREAK_SPOTS, CENTER, DOOR, FLOOR, PAYROLL_BOARD, RECEPTION_SPOTS, STATUS_WALL, ZONES, chairPos, deskPos, route } from "./layout";
 import { DISPLAY, MONO, SANS, fit, roundRect, useCanvasTexture } from "./textures";
+import { useCharacterRig, type ModelApi } from "./CharacterModel";
+import Decor from "./Decor";
 import type { Theme } from "@/lib/useTheme";
 
 const LIME = "#C8F135";
@@ -148,6 +150,9 @@ function Shell() {
       <FloorLabel text="MEETING" p={[7.0, 0.01, 3.35]} w={2.8} />
       <FloorLabel text="MANAGER OFFICE" p={[15.4, 0.01, 8.75]} w={3.6} />
       <FloorLabel text="BREAK AREA" p={[14.2, 0.01, 13.05]} w={3.2} />
+      <FloorLabel text="LOUNGE" p={[2.3, 0.02, 3.55]} w={2.4} />
+      <FloorLabel text="FOCUS" p={[10.85, 0.01, 2.1]} w={2.0} />
+      <FloorLabel text="HOT DESKS" p={[15.3, 0.01, 3.7]} w={3.0} />
       <FloorLabel text="SHIFT" p={[2.5, 0.012, 11.7]} w={3.4} size={0.9} color={pal.shiftLabel} rot={0.0} />
     </group>
   );
@@ -428,24 +433,24 @@ function Desk({ local, occupant, selected, onSelect, flashAt }: { local: number;
   });
   return (
     <group position={[x, 0, z]} onClick={onClick} onPointerOver={(e) => { e.stopPropagation(); if (occupant) document.body.style.cursor = "pointer"; }} onPointerOut={() => (document.body.style.cursor = "")}>
-      <Box p={[0, 0.72, 0]} s={[1.3, 0.05, 0.72]} m={selected ? mat(pal.deskSel, { rough: 0.6 }) : top} />
-      <Box p={[-0.58, 0.36, 0]} s={[0.05, 0.72, 0.62]} m={leg} />
-      <Box p={[0.58, 0.36, 0]} s={[0.05, 0.72, 0.62]} m={leg} />
+      <Box p={[0, 0.5, 0]} s={[1.3, 0.05, 0.72]} m={selected ? mat(pal.deskSel, { rough: 0.6 }) : top} />
+      <Box p={[-0.58, 0.25, 0]} s={[0.05, 0.5, 0.62]} m={leg} />
+      <Box p={[0.58, 0.25, 0]} s={[0.05, 0.5, 0.62]} m={leg} />
       {/* monitor */}
-      <group position={[0, 1.02, -0.2]}>
+      <group position={[0, 0.8, -0.2]}>
         <Box p={[0, 0, 0]} s={[0.62, 0.38, 0.04]} m={mat("#0F130E")} />
         <MonitorScreen e={occupant} />
         <Box p={[0, -0.24, 0.0]} s={[0.05, 0.12, 0.04]} m={leg} />
         <Box p={[0, -0.29, 0.02]} s={[0.24, 0.02, 0.14]} m={leg} />
       </group>
-      <pointLight ref={glow} position={[0, 1.05, 0.15]} color={LIME} intensity={0} distance={1.6} decay={2} />
+      <pointLight ref={glow} position={[0, 0.83, 0.15]} color={LIME} intensity={0} distance={1.6} decay={2} />
       {/* keyboard */}
-      <Box p={[0, 0.755, 0.12]} s={[0.42, 0.015, 0.14]} m={mat(pal.kbd)} cast={false} />
+      <Box p={[0, 0.533, 0.12]} s={[0.42, 0.015, 0.14]} m={mat(pal.kbd)} cast={false} />
       {/* chair */}
-      <group position={[0, 0, 0.78]}>
-        <Box p={[0, 0.44, 0]} s={[0.44, 0.07, 0.42]} m={mat(pal.seat)} />
-        <Box p={[0, 0.74, 0.2]} s={[0.44, 0.52, 0.06]} m={mat(pal.seat)} />
-        <Box p={[0, 0.22, 0]} s={[0.05, 0.44, 0.05]} m={leg} />
+      <group position={[0, 0, 0.46]}>
+        <Box p={[0, 0.265, 0]} s={[0.5, 0.07, 0.46]} m={mat(pal.seat)} />
+        <Box p={[0, 0.58, 0.22]} s={[0.5, 0.5, 0.06]} m={mat(pal.seat)} />
+        <Box p={[0, 0.13, 0]} s={[0.06, 0.26, 0.06]} m={leg} />
       </group>
     </group>
   );
@@ -474,8 +479,21 @@ function targetOf(e: OfficeEmployee, local: number, breakSpot: number, reception
   return { x, z, seat: false, face: Math.atan2(2.45 - x, 9.65 - z) };
 }
 
-const SPEED = 2.1;
+const SPEED = 1.3; // metres per second; the walk clip is retimed to match
 const keyOf = (t: Target) => `${t.x.toFixed(2)},${t.z.toFixed(2)}`;
+
+type Mode = "stand" | "sitting" | "seated" | "standing";
+const WORK_SLOTS = ["typing_loop", "typing_loop", "mouse_click", "typing_loop", "read_screen", "typing_loop", "thinking", "typing_loop"];
+const BREAK_SLOTS = ["idle_breathe", "chat_talk", "chat_listen", "look_left_right", "chat_talk", "idle_breathe"];
+const IDLE_SLOTS = ["idle_breathe", "look_left_right", "idle_breathe", "wave", "idle_breathe"];
+const SIT_SECS = 1.15;
+
+/** Rigged GLB character. Movement, routing and effects stay here; the model only plays clips. */
+function CharacterBody({ e, apiOut }: { e: OfficeEmployee; apiOut: React.MutableRefObject<ModelApi | null> }) {
+  const { root, api } = useCharacterRig(e.id, e.look);
+  apiOut.current = api;
+  return <primitive object={root} />;
+}
 
 function Character({
   e, target, entrance, selected, onSelect, fx, reduced, frozen, posOut,
@@ -483,16 +501,12 @@ function Character({
   e: OfficeEmployee; target: Target; entrance: boolean; selected: boolean; onSelect: (id: number | null) => void; fx?: Fx[number]; reduced: boolean; frozen: boolean; posOut: Map<number, THREE.Vector3>;
 }) {
   const root = useRef<THREE.Group>(null);
-  const body = useRef<THREE.Group>(null);
-  const legL = useRef<THREE.Group>(null);
-  const legR = useRef<THREE.Group>(null);
-  const armL = useRef<THREE.Group>(null);
-  const armR = useRef<THREE.Group>(null);
-  const head = useRef<THREE.Group>(null);
   const ringSel = useRef<THREE.Mesh>(null);
   const pendingRing = useRef<THREE.Group>(null);
   const coins = useRef<THREE.Group>(null);
   const confetti = useRef<THREE.Group>(null);
+  const model = useRef<ModelApi | null>(null);
+  const fsm = useRef<{ mode: Mode; at: number; slot: number; celebrating: string }>({ mode: "stand", at: 0, slot: -1, celebrating: "" });
   const [hover, setHover] = useState(false);
 
   const st = useRef<{ x: number; z: number; path: [number, number][]; face: number; walking: boolean; key: string }>(null as any);
@@ -516,13 +530,6 @@ function Character({
     s.path = route([s.x, s.z], [target.x, target.z]);
   }, [key, reduced, target.x, target.z]);
 
-  const look = e.look;
-  const shirt = mat(look.shirt, { rough: 0.85 });
-  const skin = mat(look.skin, { rough: 0.6 });
-  const hair = mat(look.hair, { rough: 0.9 });
-  const pants = mat("#1F2330");
-  const dark = mat("#111111");
-
   const confettiBits = useMemo(
     () => Array.from({ length: 14 }, (_, i) => ({ a: (i / 14) * Math.PI * 2, v: 0.6 + ((i * 37) % 10) / 14, c: [LIME, "#E4E7DA", "#8FA34A", AMBER][i % 4] })),
     [],
@@ -535,10 +542,24 @@ function Character({
     if (!g) return;
     const t = state.clock.elapsedTime;
     const now = performance.now();
+    const f = fsm.current;
+    const m = model.current;
 
-    // movement
+    const cheering = !!fx?.cheerAt && now - fx.cheerAt < 2400 && !reduced;
+    const paying = !!fx?.payoutAt && now - fx.payoutAt < 2400 && !reduced;
+    const wantSeat = !s.path.length && target.seat && !cheering && !paying;
+
+    // seat state machine: stand up before walking or celebrating, sit down on arrival
+    if (m && !reduced) {
+      if (f.mode === "stand" && wantSeat) { f.mode = "sitting"; f.at = t; m.play("sit_down", { once: true, fade: 0.12 }); }
+      else if ((f.mode === "seated" || f.mode === "sitting") && !wantSeat) { f.mode = "standing"; f.at = t; m.play("stand_up", { once: true, fade: 0.12 }); }
+      if (f.mode === "sitting" && t - f.at > SIT_SECS) f.mode = "seated";
+      if (f.mode === "standing" && t - f.at > SIT_SECS) f.mode = "stand";
+    } else if (reduced) f.mode = wantSeat ? "seated" : "stand";
+
+    // movement (held while the body is rising from the chair)
     s.walking = false;
-    if (!frozen && s.path.length) {
+    if (!frozen && s.path.length && f.mode !== "standing") {
       const [nx, nz] = s.path[0];
       const dx = nx - s.x;
       const dz = nz - s.z;
@@ -556,47 +577,42 @@ function Character({
       }
     }
     const arrived = !s.path.length;
-    const seated = arrived && target.seat;
     if (arrived) {
       // turn to the desk or the room once there
       let df = target.face - s.face;
       df = Math.atan2(Math.sin(df), Math.cos(df));
       s.face += df * Math.min(1, dt * 8);
     }
-
-    const cheering = fx?.cheerAt && now - fx.cheerAt < 2600;
-    const jump = cheering && !reduced ? Math.abs(Math.sin((now - fx!.cheerAt!) / 120)) * 0.28 : 0;
-    g.position.set(s.x, jump, s.z);
+    g.position.set(s.x, 0, s.z);
     g.rotation.y = s.face;
     posOut.set(e.id, g.position);
 
-    // pose
-    const typing = seated && e.pose === "working" && !reduced;
-    const walkPhase = s.walking && !reduced ? Math.sin(t * 11) : 0;
-    if (body.current) body.current.position.y = seated ? -0.2 : 0;
-    if (body.current) body.current.position.z = seated ? 0.06 : 0;
-    if (legL.current && legR.current) {
-      const sitAngle = seated ? -Math.PI / 2 : 0;
-      legL.current.rotation.x = sitAngle + walkPhase * 0.55;
-      legR.current.rotation.x = sitAngle - walkPhase * 0.55;
-    }
-    if (armL.current && armR.current) {
-      if (cheering && !reduced) {
-        armL.current.rotation.x = -Math.PI + Math.sin(t * 14) * 0.25;
-        armR.current.rotation.x = -Math.PI - Math.sin(t * 14) * 0.25;
-      } else if (typing) {
-        armL.current.rotation.x = -1.15 + Math.sin(t * 18) * 0.08;
-        armR.current.rotation.x = -1.15 + Math.sin(t * 18 + 1.7) * 0.08;
-      } else {
-        armL.current.rotation.x = -walkPhase * 0.5;
-        armR.current.rotation.x = walkPhase * 0.5;
+    // choose the looping clip once sit/stand transitions are done
+    if (m) {
+      if (reduced) {
+        m.play(f.mode === "seated" ? "seated_idle" : "idle_breathe", { fade: 0 });
+      } else if (f.mode === "stand" || f.mode === "seated") {
+        const slot = Math.floor((t + e.id * 3.7) / 8);
+        if (cheering && f.celebrating !== "c") { f.celebrating = "c"; m.play("celebrate_promotion", { once: true, fade: 0.15 }); }
+        else if (paying && !cheering && f.celebrating !== "p") { f.celebrating = "p"; m.play("payday_reaction", { once: true, fade: 0.15 }); }
+        else if (!cheering && !paying) {
+          if (f.celebrating) { f.celebrating = ""; f.slot = -1; }
+          if (s.walking) m.play("walk", { speed: SPEED / 0.64, fade: 0.15 });
+          else if (f.mode === "seated") {
+            if (f.slot !== slot) { f.slot = slot; m.play(e.pose === "working" ? WORK_SLOTS[slot % WORK_SLOTS.length] : "seated_idle", { fade: 0.3 }); }
+          } else if (f.slot !== slot || m.current() === "walk") {
+            f.slot = slot;
+            const list = e.pose === "break" ? BREAK_SLOTS : IDLE_SLOTS;
+            m.play(list[slot % list.length], { fade: 0.3 });
+          }
+        }
       }
+      m.update(frozen ? 0 : dt, t);
     }
-    if (head.current) head.current.rotation.x = typing ? Math.sin(t * 2.2 + e.id) * 0.06 + 0.12 : 0;
 
     if (ringSel.current) {
-      const m = ringSel.current.material as THREE.MeshBasicMaterial;
-      m.opacity = selected ? 0.55 + Math.sin(t * 4) * 0.25 : 0;
+      const mt = ringSel.current.material as THREE.MeshBasicMaterial;
+      mt.opacity = selected ? 0.55 + Math.sin(t * 4) * 0.25 : 0;
     }
     if (pendingRing.current) pendingRing.current.rotation.y = t * 0.8;
 
@@ -607,7 +623,7 @@ function Character({
       if (coins.current.visible) {
         coins.current.children.forEach((c, i) => {
           const a = (i / coins.current!.children.length) * Math.PI * 2 + k * 3;
-          c.position.set(Math.cos(a) * 0.32 * (0.6 + k), 1.3 + k * 1.3 + Math.sin(i) * 0.08, Math.sin(a) * 0.32 * (0.6 + k));
+          c.position.set(Math.cos(a) * 0.4 * (0.6 + k), 1.6 + k * 1.3 + Math.sin(i) * 0.08, Math.sin(a) * 0.4 * (0.6 + k));
           c.rotation.x = t * 6 + i;
           ((c as THREE.Mesh).material as THREE.MeshStandardMaterial).opacity = 1 - k;
         });
@@ -621,7 +637,7 @@ function Character({
         confetti.current.children.forEach((c, i) => {
           const b = confettiBits[i];
           const r = b.v * k * 1.2;
-          c.position.set(Math.cos(b.a) * r, 1.4 + k * 1.6 - k * k * 2.4, Math.sin(b.a) * r);
+          c.position.set(Math.cos(b.a) * r, 1.7 + k * 1.6 - k * k * 2.4, Math.sin(b.a) * r);
           c.rotation.set(t * 5 + i, t * 3, 0);
         });
       }
@@ -647,59 +663,30 @@ function Character({
         <group ref={pendingRing} position={[0, 0.02, 0]}>
           {Array.from({ length: 10 }, (_, i) => (
             <mesh key={i} rotation={[-Math.PI / 2, 0, 0]}>
-              <ringGeometry args={[0.27, 0.33, 6, 1, (i / 10) * Math.PI * 2, (Math.PI * 2) / 10 * 0.55]} />
+              <ringGeometry args={[0.34, 0.41, 6, 1, (i / 10) * Math.PI * 2, (Math.PI * 2) / 10 * 0.55]} />
               <meshBasicMaterial color={AMBER} transparent opacity={0.9} />
             </mesh>
           ))}
         </group>
       ) : (
         <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.27, 0.32, 28]} />
+          <ringGeometry args={[0.34, 0.4, 28]} />
           <meshBasicMaterial color={ringColor} transparent opacity={e.pose === "working" ? 0.85 : 0.5} />
         </mesh>
       )}
       <mesh ref={ringSel} position={[0, 0.021, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.36, 0.44, 32]} />
+        <ringGeometry args={[0.45, 0.54, 32]} />
         <meshBasicMaterial color={LIME} transparent opacity={0} />
       </mesh>
 
-      <group ref={body}>
-        {/* legs pivot at the hip */}
-        <group ref={legL} position={[-0.075, 0.42, 0]}>
-          <mesh geometry={G.box} material={pants} position={[0, -0.2, 0]} scale={[0.11, 0.42, 0.13]} castShadow />
-          <mesh geometry={G.box} material={dark} position={[0, -0.39, 0.04]} scale={[0.12, 0.05, 0.2]} castShadow />
-        </group>
-        <group ref={legR} position={[0.075, 0.42, 0]}>
-          <mesh geometry={G.box} material={pants} position={[0, -0.2, 0]} scale={[0.11, 0.42, 0.13]} castShadow />
-          <mesh geometry={G.box} material={dark} position={[0, -0.39, 0.04]} scale={[0.12, 0.05, 0.2]} castShadow />
-        </group>
-        <RoundedBox args={[0.36, 0.44, 0.22]} radius={0.06} smoothness={3} position={[0, 0.65, 0]} material={shirt} castShadow />
-        {/* arms pivot at the shoulder */}
-        <group ref={armL} position={[-0.23, 0.84, 0]}>
-          <mesh geometry={G.box} material={shirt} position={[0, -0.17, 0]} scale={[0.09, 0.34, 0.1]} castShadow />
-          <mesh geometry={G.box} material={skin} position={[0, -0.36, 0]} scale={[0.08, 0.06, 0.09]} />
-        </group>
-        <group ref={armR} position={[0.23, 0.84, 0]}>
-          <mesh geometry={G.box} material={shirt} position={[0, -0.17, 0]} scale={[0.09, 0.34, 0.1]} castShadow />
-          <mesh geometry={G.box} material={skin} position={[0, -0.36, 0]} scale={[0.08, 0.06, 0.09]} />
-        </group>
-        <group ref={head} position={[0, 1.02, 0]}>
-          <mesh geometry={G.head} material={skin} castShadow />
-          <mesh geometry={G.eye} material={dark} position={[-0.052, 0.015, 0.138]} />
-          <mesh geometry={G.eye} material={dark} position={[0.052, 0.015, 0.138]} />
-          {look.style !== 3 && <mesh geometry={G.hairCap} material={hair} position={[0, 0.012, -0.004]} rotation={[-0.25, 0, 0]} />}
-          {look.style === 1 && <mesh geometry={G.bun} material={hair} position={[0, 0.1, -0.14]} />}
-          {look.style === 2 && <mesh geometry={G.box} material={hair} position={[0, 0.15, -0.02]} scale={[0.22, 0.08, 0.2]} />}
-          {look.style === 3 && <mesh geometry={G.box} material={hair} position={[0, 0.13, -0.03]} scale={[0.2, 0.03, 0.2]} />}
-          {look.acc === 1 && (
-            <>
-              <mesh geometry={G.box} material={dark} position={[-0.052, 0.015, 0.15]} scale={[0.07, 0.045, 0.01]} />
-              <mesh geometry={G.box} material={dark} position={[0.052, 0.015, 0.15]} scale={[0.07, 0.045, 0.01]} />
-            </>
-          )}
-          {look.acc === 2 && <mesh geometry={G.headset} material={mat("#2C2C30")} position={[0, 0.02, 0]} rotation={[0, Math.PI / 2, 0]} />}
-        </group>
-      </group>
+      <Suspense fallback={null}>
+        <CharacterBody e={e} apiOut={model} />
+      </Suspense>
+      {/* cheap click target: the skinned meshes are not raycast */}
+      <mesh position={[0, 0.7, 0]}>
+        <cylinderGeometry args={[0.36, 0.36, 1.4, 8]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
 
       <group ref={coins} visible={false}>
         {Array.from({ length: 9 }, (_, i) => (
@@ -717,7 +704,7 @@ function Character({
       </group>
 
       {(hover || selected) && (
-        <Html position={[0, 1.55, 0]} center zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
+        <Html position={[0, 1.85, 0]} center zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
           <div style={{ whiteSpace: "nowrap", background: "rgba(15,19,14,.92)", border: `1px solid ${selected ? LIME : "#3A4436"}`, color: "#E9EDE2", borderRadius: 999, padding: "4px 10px", font: `600 12px ${SANS}` }}>
             {e.name} <span style={{ color: LIME, fontFamily: MONO, fontWeight: 500 }}>{e.ticker}</span>
             {e.sim && <span style={{ color: "#8E978A", fontWeight: 500 }}> · SIM</span>}
@@ -725,7 +712,7 @@ function Character({
         </Html>
       )}
       {showBadge && (
-        <Html position={[0, 1.95, 0]} center zIndexRange={[30, 0]} style={{ pointerEvents: "none" }}>
+        <Html position={[0, 2.25, 0]} center zIndexRange={[30, 0]} style={{ pointerEvents: "none" }}>
           <div className="o3-badge" style={{ whiteSpace: "nowrap", background: LIME, color: "#0F130E", borderRadius: 8, padding: "4px 10px", font: `900 14px ${DISPLAY}`, letterSpacing: "0.06em" }}>
             PROMOTED · {fx!.badge!.toUpperCase()}
           </div>
@@ -866,6 +853,7 @@ function World(props: SceneProps) {
       <ManagerOffice />
       <Reception />
       <BreakArea />
+      <Decor dark={(props.theme ?? "dark") === "dark"} />
       <Plant p={[12.3, 0, 3.4]} s={0.9} />
       <Plant p={[4.2, 0, 10.2]} s={0.85} />
       <PayrollBoard scene={scene} flashAt={boardFlashAt} />

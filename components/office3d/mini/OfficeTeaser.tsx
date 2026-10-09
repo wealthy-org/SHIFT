@@ -33,12 +33,12 @@ export default function OfficeTeaser({ theme = "dark" }: { theme?: Theme }) {
       <mesh geometry={G.box} material={floor} position={[0, -0.05, 0]} scale={[5.2, 0.1, 2.4]} receiveShadow />
       {xs.map((x, i) => (
         <group key={i} position={[x, 0, 0]}>
-          <mesh geometry={G.box} material={desk} position={[0, 0.36, -0.36]} scale={[0.9, 0.05, 0.5]} castShadow receiveShadow />
+          <mesh geometry={G.box} material={desk} position={[0, 0.425, -0.36]} scale={[0.9, 0.05, 0.5]} castShadow receiveShadow />
           {/* monitor, facing the avatar */}
-          <mesh geometry={G.box} material={monitorBody} position={[0, 0.58, -0.48]} scale={[0.34, 0.21, 0.03]} castShadow />
-          <mesh geometry={G.box} material={screen} position={[0, 0.58, -0.465]} scale={[0.28, 0.15, 0.012]} />
-          <mesh geometry={G.box} material={monitorBody} position={[0, 0.44, -0.48]} scale={[0.03, 0.08, 0.02]} />
-          <pointLight position={[0, 0.58, -0.4]} color={LIME} intensity={0.8} distance={1.1} decay={2} />
+          <mesh geometry={G.box} material={monitorBody} position={[0, 0.67, -0.48]} scale={[0.34, 0.21, 0.03]} castShadow />
+          <mesh geometry={G.box} material={screen} position={[0, 0.67, -0.465]} scale={[0.28, 0.15, 0.012]} />
+          <mesh geometry={G.box} material={monitorBody} position={[0, 0.51, -0.48]} scale={[0.03, 0.08, 0.02]} />
+          <pointLight position={[0, 0.67, -0.4]} color={LIME} intensity={0.8} distance={1.1} decay={2} />
           {/* avatar faces the desk, not away from it */}
           <group rotation={[0, Math.PI, 0]}>
             <AvatarMesh look={LOOKS[i % LOOKS.length]} anim="typing" />

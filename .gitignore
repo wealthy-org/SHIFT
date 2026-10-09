@@ -12,6 +12,9 @@ next-env.d.ts
 # OS noise
 .DS_Store
 
+# personal Claude Code config (MCP server approvals, etc.)
+.claude/settings.local.json
+
 # contracts: libraries are reinstalled with `forge install`, build output is regenerated
 contracts/lib/
 contracts/out/

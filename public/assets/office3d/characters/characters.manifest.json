@@ -1,0 +1,356 @@
+{
+ "version": 1,
+ "file": "character_base.glb",
+ "units": "metres",
+ "height_m": 1.46,
+ "orientation": "faces +Z, Y up",
+ "fps": 30,
+ "rig": [
+  "Hips",
+  "Spine",
+  "Chest",
+  "Neck",
+  "Head",
+  "Shoulder_L",
+  "UpperArm_L",
+  "LowerArm_L",
+  "Hand_L",
+  "Thigh_L",
+  "Shin_L",
+  "Foot_L",
+  "Shoulder_R",
+  "UpperArm_R",
+  "LowerArm_R",
+  "Hand_R",
+  "Thigh_R",
+  "Shin_R",
+  "Foot_R"
+ ],
+ "morphs": {
+  "Eyes": [
+   "blink"
+  ],
+  "Head": [
+   "smile",
+   "open"
+  ]
+ },
+ "animations": [
+  "celebrate_promotion",
+  "chat_listen",
+  "chat_talk",
+  "coffee_pickup",
+  "coffee_putdown",
+  "disappointed",
+  "drink_coffee",
+  "idle_breathe",
+  "look_left_right",
+  "mouse_click",
+  "payday_reaction",
+  "read_screen",
+  "seated_idle",
+  "sit_down",
+  "stand_up",
+  "stretch",
+  "thinking",
+  "typing_loop",
+  "walk",
+  "walk_exit",
+  "wave",
+  "blink"
+ ],
+ "toggle_nodes": {
+  "hair": [
+   "Hair_00_crop",
+   "Hair_01_bob",
+   "Hair_02_long",
+   "Hair_03_ponytail",
+   "Hair_04_buns",
+   "Hair_05_swoop",
+   "Hair_06_puff",
+   "Hair_07_buzz"
+  ],
+  "top": [
+   "Top_hoodie",
+   "Top_sweater",
+   "Top_tee",
+   "Top_shirt",
+   "Top_blazer"
+  ],
+  "bottom": [
+   "Bottom_pants",
+   "Bottom_shorts",
+   "Bottom_skirt"
+  ],
+  "shoes": [
+   "Shoes_sneakers",
+   "Shoes_flats"
+  ],
+  "acc": [
+   "Acc_cap",
+   "Acc_backpack",
+   "Acc_glasses",
+   "Acc_headphones",
+   "Acc_tie",
+   "Acc_lanyard"
+  ],
+  "always": [
+   "Head",
+   "Ears",
+   "Eyes",
+   "Hands",
+   "Skin_arms",
+   "Skin_legs"
+  ]
+ },
+ "tint_materials": {
+  "M_Skin": "skin tone (head, ears, hands, arms, legs)",
+  "M_Hair": "hair",
+  "M_Top": "hoodie/sweater/tee",
+  "M_TopTrim": "hoodie/sweater trim",
+  "M_Shirt": "shirt, blazer inner",
+  "M_Blazer": "blazer",
+  "M_Tie": "tie",
+  "M_Bottom": "pants/shorts",
+  "M_Skirt": "skirt",
+  "M_Shoes": "sneakers",
+  "M_ShoesDark": "flats",
+  "M_Cap": "cap",
+  "M_Pack": "backpack",
+  "M_Iris": "iris",
+  "M_Glasses": "glasses frame",
+  "M_Phones": "headphones",
+  "M_Badge": "lanyard card"
+ },
+ "seat": {
+  "note": "sit_down/seated_idle assume seat top 0.30 m above floor; hips drop 0.069 m",
+  "seat_height_m": 0.3
+ },
+ "presets": [
+  {
+   "id": "haru",
+   "name": "Haru",
+   "gender": "m",
+   "hair": "Hair_00_crop",
+   "top": "Top_hoodie",
+   "bottom": "Bottom_pants",
+   "shoes": "Shoes_sneakers",
+   "acc": [
+    "Acc_cap",
+    "Acc_backpack"
+   ],
+   "skin_c": "#E9B48C",
+   "hair_c": "#241D1B",
+   "top_c": "#B9B6B1",
+   "trim_c": "#9C9893",
+   "bot_c": "#2D2E33",
+   "shoe_c": "#F2EFEA",
+   "cap_c": "#2A2B30",
+   "iris_c": "#4A3026"
+  },
+  {
+   "id": "aiko",
+   "name": "Aiko",
+   "gender": "f",
+   "hair": "Hair_05_swoop",
+   "top": "Top_blazer",
+   "bottom": "Bottom_skirt",
+   "shoes": "Shoes_flats",
+   "acc": [
+    "Acc_glasses",
+    "Acc_tie"
+   ],
+   "skin_c": "#F2C3A0",
+   "hair_c": "#D9560F",
+   "blazer_c": "#1F1F24",
+   "shirt_c": "#F3F3F0",
+   "tie_c": "#B3202A",
+   "skirt_c": "#1F1F24",
+   "shoed_c": "#111114",
+   "iris_c": "#4A6F9B"
+  },
+  {
+   "id": "mira",
+   "name": "Mira",
+   "gender": "f",
+   "hair": "Hair_01_bob",
+   "top": "Top_shirt",
+   "bottom": "Bottom_skirt",
+   "shoes": "Shoes_flats",
+   "acc": [
+    "Acc_lanyard"
+   ],
+   "skin_c": "#8A5A3C",
+   "hair_c": "#15110F",
+   "shirt_c": "#F1EFEA",
+   "skirt_c": "#2B3A55",
+   "shoed_c": "#2A1C16",
+   "iris_c": "#2B1A12"
+  },
+  {
+   "id": "noor",
+   "name": "Noor",
+   "gender": "f",
+   "hair": "Hair_02_long",
+   "top": "Top_sweater",
+   "bottom": "Bottom_pants",
+   "shoes": "Shoes_sneakers",
+   "acc": [
+    "Acc_headphones"
+   ],
+   "skin_c": "#C98F63",
+   "hair_c": "#4A2A18",
+   "top_c": "#D8A935",
+   "trim_c": "#B98B24",
+   "bot_c": "#3C4A63",
+   "shoe_c": "#F2EFEA",
+   "iris_c": "#3B2A1E"
+  },
+  {
+   "id": "kai",
+   "name": "Kai",
+   "gender": "m",
+   "hair": "Hair_07_buzz",
+   "top": "Top_tee",
+   "bottom": "Bottom_shorts",
+   "shoes": "Shoes_sneakers",
+   "acc": [],
+   "skin_c": "#6B4430",
+   "hair_c": "#120E0D",
+   "top_c": "#2FA39A",
+   "bot_c": "#B9A27A",
+   "shoe_c": "#F2EFEA",
+   "iris_c": "#1E1410"
+  },
+  {
+   "id": "lena",
+   "name": "Lena",
+   "gender": "f",
+   "hair": "Hair_03_ponytail",
+   "top": "Top_tee",
+   "bottom": "Bottom_pants",
+   "shoes": "Shoes_sneakers",
+   "acc": [],
+   "skin_c": "#F6D5BC",
+   "hair_c": "#E0B04A",
+   "top_c": "#E987A6",
+   "bot_c": "#4F6C94",
+   "shoe_c": "#F2EFEA",
+   "iris_c": "#4F8A63"
+  },
+  {
+   "id": "dewi",
+   "name": "Dewi",
+   "gender": "f",
+   "hair": "Hair_04_buns",
+   "top": "Top_shirt",
+   "bottom": "Bottom_skirt",
+   "shoes": "Shoes_flats",
+   "acc": [
+    "Acc_lanyard"
+   ],
+   "skin_c": "#D9A57A",
+   "hair_c": "#1A1311",
+   "shirt_c": "#C9B8E8",
+   "skirt_c": "#5B5F68",
+   "shoed_c": "#2B2B30",
+   "iris_c": "#2B1A12"
+  },
+  {
+   "id": "omar",
+   "name": "Omar",
+   "gender": "m",
+   "hair": "Hair_00_crop",
+   "top": "Top_hoodie",
+   "bottom": "Bottom_pants",
+   "shoes": "Shoes_sneakers",
+   "acc": [
+    "Acc_glasses"
+   ],
+   "skin_c": "#B97C55",
+   "hair_c": "#1B1412",
+   "top_c": "#4D6A5A",
+   "trim_c": "#3E5547",
+   "bot_c": "#26272C",
+   "shoe_c": "#E9E4DA",
+   "iris_c": "#2F1D14"
+  },
+  {
+   "id": "sam",
+   "name": "Sam",
+   "gender": "m",
+   "hair": "Hair_06_puff",
+   "top": "Top_blazer",
+   "bottom": "Bottom_pants",
+   "shoes": "Shoes_flats",
+   "acc": [
+    "Acc_tie"
+   ],
+   "skin_c": "#A86F4A",
+   "hair_c": "#7A3B1B",
+   "blazer_c": "#27324D",
+   "shirt_c": "#F1EFEA",
+   "tie_c": "#2E8B57",
+   "bot_c": "#27324D",
+   "shoed_c": "#1A1412",
+   "iris_c": "#3A2517"
+  },
+  {
+   "id": "yuki",
+   "name": "Yuki",
+   "gender": "f",
+   "hair": "Hair_01_bob",
+   "top": "Top_sweater",
+   "bottom": "Bottom_skirt",
+   "shoes": "Shoes_flats",
+   "acc": [
+    "Acc_glasses"
+   ],
+   "skin_c": "#F7DCC8",
+   "hair_c": "#1C2030",
+   "top_c": "#EFE4D0",
+   "trim_c": "#D8C9AE",
+   "skirt_c": "#7A3040",
+   "shoed_c": "#3A2A28",
+   "iris_c": "#2A3A5A"
+  },
+  {
+   "id": "raka",
+   "name": "Raka",
+   "gender": "m",
+   "hair": "Hair_00_crop",
+   "top": "Top_shirt",
+   "bottom": "Bottom_pants",
+   "shoes": "Shoes_flats",
+   "acc": [
+    "Acc_tie",
+    "Acc_lanyard"
+   ],
+   "skin_c": "#D2956A",
+   "hair_c": "#17120F",
+   "shirt_c": "#9CC3E6",
+   "tie_c": "#22304F",
+   "bot_c": "#2D2E33",
+   "shoed_c": "#1A1412",
+   "iris_c": "#2F1D14"
+  },
+  {
+   "id": "zoe",
+   "name": "Zoe",
+   "gender": "f",
+   "hair": "Hair_02_long",
+   "top": "Top_tee",
+   "bottom": "Bottom_shorts",
+   "shoes": "Shoes_sneakers",
+   "acc": [
+    "Acc_headphones"
+   ],
+   "skin_c": "#A9714B",
+   "hair_c": "#E86FA3",
+   "top_c": "#F4F4F2",
+   "bot_c": "#5A7FB0",
+   "shoe_c": "#F2EFEA",
+   "iris_c": "#3A2517"
+  }
+ ]
+}

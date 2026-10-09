@@ -8,7 +8,7 @@ export const DOOR: [number, number] = [0.7, 13.0];
 export const deskPos = (local: number): [number, number] => [5.6 + (local % 4) * 1.8, 4.4 + Math.floor(local / 4) * 1.8];
 export const chairPos = (local: number): [number, number] => {
   const [x, z] = deskPos(local);
-  return [x, z + 0.78];
+  return [x, z + 0.46];
 };
 
 // Break area spots, front right. More than the mockup's six so a busy office
