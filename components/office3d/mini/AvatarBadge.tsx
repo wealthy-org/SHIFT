@@ -7,10 +7,15 @@ import type { Look } from "@/lib/engine/look";
 import { AvatarMesh, type AvatarAnim } from "./AvatarMesh";
 import { MiniCanvas } from "./MiniCanvas";
 
+// Framed as a bust shot (chest up), like a profile photo, not full-body: at
+// badge size there is no room for legs, and the previous full-body framing
+// clipped the head for any look with taller hair (style 2's flat top). The
+// group offset here is tuned so the head clears the top of the frustum with
+// margin even for the tallest hair variant.
 export default function AvatarBadge({ look, anim = "idle" }: { look: Look; anim?: AvatarAnim }) {
   return (
-    <MiniCanvas height="100%" camera={[0, 1.02, 1.5]} fov={24}>
-      <group position={[0, -0.56, 0]}>
+    <MiniCanvas height="100%" camera={[0, 0.05, 2.0]} fov={34}>
+      <group position={[0, -0.68, 0]}>
         <AvatarMesh look={look} anim={anim} />
       </group>
     </MiniCanvas>
