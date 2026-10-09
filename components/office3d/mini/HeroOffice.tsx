@@ -37,12 +37,22 @@ function FloorLabel() {
 
 function Desk({ x, z, look, anim }: { x: number; z: number; look: Look; anim: AvatarAnim }) {
   const top = mat("#232B20");
+  const monitorBody = mat("#0F130E");
+  const screen = mat(LIME, { emissive: LIME, emissiveIntensity: 1.1 });
+  const screenOff = mat("#1A1F18");
   const glow = anim === "typing";
   return (
     <group position={[x, 0, z]}>
       <mesh geometry={G.box} material={top} position={[0, 0.36, -0.36]} scale={[0.95, 0.05, 0.52]} castShadow receiveShadow />
-      {glow && <pointLight position={[0, 0.55, -0.36]} color={LIME} intensity={0.9} distance={1.4} decay={2} />}
-      <AvatarMesh look={look} anim={anim} />
+      {/* monitor, facing the avatar */}
+      <mesh geometry={G.box} material={monitorBody} position={[0, 0.58, -0.48]} scale={[0.36, 0.22, 0.03]} castShadow />
+      <mesh geometry={G.box} material={glow ? screen : screenOff} position={[0, 0.58, -0.465]} scale={[0.3, 0.16, 0.012]} />
+      <mesh geometry={G.box} material={monitorBody} position={[0, 0.44, -0.48]} scale={[0.03, 0.08, 0.02]} />
+      {glow && <pointLight position={[0, 0.58, -0.4]} color={LIME} intensity={0.9} distance={1.2} decay={2} />}
+      {/* avatar faces the desk, not away from it */}
+      <group rotation={[0, Math.PI, 0]}>
+        <AvatarMesh look={look} anim={anim} />
+      </group>
     </group>
   );
 }
