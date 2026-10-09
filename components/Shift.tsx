@@ -4,6 +4,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { useLazyComponent } from "./office3d/mini/useLazy";
 
 const loadOfficeTeaser = () => import("./office3d/mini/OfficeTeaser");
+const loadHeroOffice = () => import("./office3d/mini/HeroOffice");
 
 // Loads the 3D teaser only once it is about to scroll into view, so a visitor
 // who never scrolls past the hero never pays for three.js at all.
@@ -80,6 +81,9 @@ export default function Shift() {
   const [claimedAt, setClaimedAt] = useState<number | null>(null);
   const [teaserRef, teaserNear] = useNearViewport<HTMLDivElement>();
   const OfficeTeaserC = useLazyComponent(loadOfficeTeaser, teaserNear);
+  // The hero is above the fold, so unlike the teaser further down, this one
+  // loads immediately rather than waiting for scroll.
+  const HeroOfficeC = useLazyComponent(loadHeroOffice, true);
 
   useEffect(() => {
     setNow(Date.now());
@@ -110,7 +114,6 @@ export default function Shift() {
   };
   const badgeRank = shift.rank;
 
-  const punches = Array.from({ length: 15 }, (_, i) => ({ bg: i < 4 + (tick % 12) ? "#161A14" : "#C3C7B7" }));
 
   const desks = EMP.map((e, off) => {
     const seq = ["CLOCKED IN", "WORKING", "WORKING", "WORKING", off % 2 ? "PROMOTED" : "SHIFT COMPLETE", "PAID"];
@@ -236,58 +239,36 @@ Shift active
 </div>
 
 <div style={{position: 'relative', height: '560px', maxWidth: '560px', width: '100%', justifySelf: 'center'}}>
-<div className="fd" style={{animationDelay: '.3s', position: 'absolute', left: '0', right: '0', top: '0', height: '168px', background: '#171C15', border: '1px solid #2A3227', borderRadius: '22px', padding: '22px 26px', overflow: 'hidden'}}>
-<div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', color: '#8E978A'}}>
-<span>Office time clock</span>
-<span>Robinhood Chain</span>
+<div className="fd" style={{animationDelay: '.3s', position: 'absolute', inset: '0', borderRadius: '22px', overflow: 'hidden', border: '1px solid #2A3227', background: '#0F130E'}}>
+{HeroOfficeC ? <HeroOfficeC /> : (
+<div aria-hidden="true" style={{width: '100%', height: '100%', position: 'relative', background: 'radial-gradient(60% 50% at 50% 55%, rgba(200,241,53,.06), transparent)'}}>
+<div style={{position: 'absolute', left: '50%', top: '58%', transform: 'translate(-50%,-50%)', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px'}}>
+{Array.from({length: 6}, (_, i) => (<Fragment key={i}><div className="sk" style={{width: '64px', height: '44px', borderRadius: '8px'}} /></Fragment>))}
 </div>
-<div style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: '76px', lineHeight: '1', marginTop: '10px', color: '#C8F135', letterSpacing: '0.02em'}}>{clock}</div>
-<div style={{position: 'absolute', left: '26px', right: '26px', bottom: '16px', height: '8px', borderRadius: '4px', background: '#0A0D09', boxShadow: 'inset 0 1px 3px rgba(0,0,0,.8)'}} />
 </div>
-
-<div className="card-in" style={{position: 'absolute', left: '4%', top: '150px', width: '62%', minWidth: '230px', transform: 'rotate(-4deg)', zIndex: '2'}}>
-<div style={{background: '#E4E7DA', color: '#161A14', borderRadius: '6px', padding: '22px 22px 26px', boxShadow: '0 30px 60px rgba(0,0,0,.45)', position: 'relative', overflow: 'hidden'}}>
-<div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderBottom: '2px solid #161A14', paddingBottom: '10px'}}>
-<span style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: '26px', letterSpacing: '0.03em'}}>Time card</span>
-<span style={{fontFamily: "'Geist Mono', monospace", fontSize: '12px'}}>EMP-0247</span>
-</div>
-<div style={{display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0', fontSize: '13px', marginTop: '12px'}}>
-<span style={{color: '#5A6156', padding: '7px 0', borderBottom: '1px solid #C3C7B7'}}>Clock in</span>
-<span style={{color: '#5A6156', padding: '7px 0', borderBottom: '1px solid #C3C7B7'}}>Snapshots</span>
-<span style={{color: '#5A6156', padding: '7px 0', borderBottom: '1px solid #C3C7B7'}}>Clock out</span>
-<span style={{padding: '9px 0', fontWeight: '600', fontSize: '18px'}}>00:00</span>
-<span style={{padding: '9px 0', fontWeight: '600', fontSize: '18px'}}>15 / 15</span>
-<span style={{padding: '9px 0', fontWeight: '600', fontSize: '18px'}}>05:00</span>
-</div>
-<div style={{display: 'flex', gap: '5px', marginTop: '14px'}} aria-hidden="true">
-{punches.map((p, i) => (<Fragment key={i}>
-<span style={{flex: '1', height: '16px', borderRadius: '3px', background: p.bg}} />
-</Fragment>))}
-</div>
-<div className="stamp" style={{position: 'absolute', right: '16px', bottom: '34px', border: '3px solid #4C7A0B', color: '#4C7A0B', padding: '4px 12px', borderRadius: '6px', fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '900', fontSize: '28px', letterSpacing: '0.06em', transform: 'rotate(-9deg)', background: 'rgba(200,241,53,.35)'}}>CLOCKED IN</div>
-</div>
+)}
 </div>
 
-<div className="badge-in" style={{position: 'absolute', right: '2%', top: '96px', width: '44%', minWidth: '200px', zIndex: '3'}}>
-<div className="sway">
-<div style={{width: '3px', height: '92px', margin: '0 auto', background: 'linear-gradient(#C8F135, #6F8A1C)'}} />
-<div style={{background: '#1D231B', border: '1px solid #39442F', borderRadius: '18px', padding: '18px', boxShadow: '0 30px 70px rgba(0,0,0,.55)'}}>
-<div style={{width: '46px', height: '8px', borderRadius: '4px', background: '#0F130E', margin: '0 auto 16px'}} />
-<div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-<svg width="56" height="56" viewBox="0 0 44 44" aria-hidden="true"><rect width="44" height="44" rx="11" fill="#C8F135" /><circle cx="22" cy="17" r="8" fill="#0F130E" /><rect x="9" y="28" width="26" height="16" rx="8" fill="#0F130E" /><rect x="18" y="15" width="3" height="3" fill="#C8F135" /><rect x="24" y="15" width="3" height="3" fill="#C8F135" /></svg>
+<div className="fd" style={{animationDelay: '.5s', position: 'absolute', left: '18px', top: '18px', background: 'rgba(15,19,14,.82)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', border: '1px solid #2A3227', borderRadius: '14px', padding: '12px 16px', pointerEvents: 'none'}}>
+<div style={{display: 'flex', justifyContent: 'space-between', gap: '18px', fontSize: '12px', color: '#8E978A'}}>
+<span>Office time clock</span><span>Robinhood Chain</span>
+</div>
+<div style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: '34px', lineHeight: '1', marginTop: '4px', color: '#C8F135', letterSpacing: '0.02em'}}>{clock}</div>
+</div>
+
+<div className="badge-in" style={{position: 'absolute', right: '18px', bottom: '18px', pointerEvents: 'none'}}>
+<div style={{background: 'rgba(29,35,27,.9)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', border: '1px solid #39442F', borderRadius: '14px', padding: '12px 14px', boxShadow: '0 20px 50px rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', gap: '10px'}}>
+<svg width="34" height="34" viewBox="0 0 44 44" aria-hidden="true"><rect width="44" height="44" rx="11" fill="#C8F135" /><circle cx="22" cy="17" r="8" fill="#0F130E" /><rect x="9" y="28" width="26" height="16" rx="8" fill="#0F130E" /></svg>
 <div>
-<div style={{fontWeight: '600', fontSize: '18px', lineHeight: '1.2'}}>Mara Voss</div>
-<div style={{fontFamily: "'Geist Mono', monospace", fontSize: '13px', color: '#C8F135'}}>$VOSS</div>
-</div>
-</div>
-<div style={{display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginTop: '16px', fontSize: '12px', color: '#8E978A'}}>
-<div>Employee<div style={{color: '#E9EDE2', fontSize: '14px'}}>EMP-0247</div></div>
-<div>Department<div style={{color: '#E9EDE2', fontSize: '14px'}}>Trading</div></div>
-<div>Rank<div style={{color: '#E9EDE2', fontSize: '14px'}}>{badgeRank}</div></div>
-<div>Market<div style={{color: '#E9EDE2', fontSize: '14px'}}>Pons</div></div>
+<div style={{fontWeight: '600', fontSize: '14px', lineHeight: '1.2'}}>Mara Voss <span style={{fontFamily: "'Geist Mono', monospace", fontWeight: '400', color: '#C8F135'}}>$VOSS</span></div>
+<div style={{fontSize: '12px', color: '#8E978A'}}>{badgeRank} · Trading</div>
 </div>
 </div>
 </div>
+
+<div className="fd" style={{animationDelay: '.7s', position: 'absolute', left: '18px', bottom: '18px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(15,19,14,.82)', border: '1px solid #2A3227', borderRadius: '999px', padding: '7px 12px', fontSize: '13px', color: '#AEB7A8', pointerEvents: 'none'}}>
+<span className="live" style={{width: '8px', height: '8px', borderRadius: '50%', background: '#C8F135', display: 'inline-block'}} />
+Shift active
 </div>
 </div>
 </section>
