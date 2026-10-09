@@ -10,11 +10,12 @@ export const ago = (ts: number, now: number) => {
   return `${Math.floor(s / 86400)}d ago`;
 };
 export const LIME = "#C8F135";
+export const LIME_INK = "var(--lime-ink)";
 export const CHIP: Record<string, [string, string, string]> = {
-  "CLOCKED IN": ["transparent", "#C9D0C2", "#4A5446"],
-  WORKING: ["rgba(200,241,53,0.12)", LIME, "rgba(200,241,53,0.35)"],
+  "CLOCKED IN": ["transparent", "var(--ink-soft)", "var(--line-x)"],
+  WORKING: ["rgba(200,241,53,0.12)", LIME_INK, "rgba(200,241,53,0.35)"],
   PROMOTED: [LIME, "#0F130E", LIME],
-  "SHIFT COMPLETE": ["#2A3127", "#E9EDE2", "#3A4436"],
+  "SHIFT COMPLETE": ["var(--chip)", "var(--ink)", "var(--line-strong)"],
   PAID: ["#E4E7DA", "#0F130E", "#E4E7DA"],
 };
 export const EXPLORER = process.env.NEXT_PUBLIC_EXPLORER_URL || "";

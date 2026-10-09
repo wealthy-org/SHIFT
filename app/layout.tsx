@@ -5,10 +5,15 @@ export const metadata: Metadata = {
   title: "SHIFT, the onchain workforce",
 };
 
+// Runs before first paint so the landing page never flashes the wrong theme.
+// Default is light; a saved preference in localStorage overrides it.
+const THEME_INIT = `(function(){try{var t=localStorage.getItem('shift.theme');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

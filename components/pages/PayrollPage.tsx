@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Fragment, useEffect, useState } from "react";
 import { PayrollSkeleton } from "../Skeleton";
 import AppShell from "../AppShell";
-import { CHIP, EXPLORER, LIME, ago, explorerTx, mmss, ponsToken, short } from "@/lib/format";
+import { CHIP, EXPLORER, LIME, LIME_INK, ago, explorerTx, mmss, ponsToken, short } from "@/lib/format";
 import { errorText, post, useApi, useMe } from "@/lib/client";
 import { fallbackLook } from "../office3d/mini/fallbackLook";
 import { useLazyComponent } from "../office3d/mini/useLazy";
@@ -35,20 +35,45 @@ export default function PayrollPage() {
   const statusShort = ["Estimate before finalization", "Finalizing, claim opens next", "Ready to claim", "In your wallet"][stage];
   const note = me ? ["Grows with your shift. Not final until the epoch closes.", "Epoch finalized, Merkle root published." + (f.opensIn ? ` Claim opens in ${f.opensIn}s.` : ""), "Your Merkle proof is ready. Claim any time.", `Sent to ${short(wallet)}. Proof recorded onchain.`][stage] : "Clock in to start earning payroll.";
   const stages = SN.map((n, i) => ({ name: n, bg: i === stage ? "#161A14" : i < stage ? "#C9CDBE" : "transparent", fg: i === stage ? LIME : i < stage ? "#161A14" : "#7A8075" }));
-  const legend = SN.map((n, i) => ({ name: n, text: TX[i], border: i === stage ? LIME : "#2E382A", bg: i === stage ? "rgba(200,241,53,.06)" : "transparent" }));
+  const legend = SN.map((n, i) => ({ name: n, text: TX[i], border: i === stage ? LIME_INK : "var(--line)", bg: i === stage ? "rgba(200,241,53,.06)" : "transparent" }));
   const disabled = stage !== 2 || busy;
   const cursor = stage === 2 ? "pointer" : "not-allowed";
   const btnBg = stage === 2 ? "#161A14" : "#C9CDBE", btnFg = stage === 2 ? LIME : "#5A6156";
   const btn = ["Available after the shift", "Finalizing epoch", "Claim pay", "Pay claimed"][stage];
   const history = data.history.map((h: any) => ({
     epoch: "Epoch " + h.epochId, pool: h.pool.toFixed(2), root: short(h.root), when: ago(h.at, data.now),
-    pay: h.mine == null ? "Not employed" : h.mine.toFixed(3) + " ETH" + (h.claimed ? "" : " · unclaimed"), payColor: h.mine == null ? "#6E776A" : "#E9EDE2",
+    pay: h.mine == null ? "Not employed" : h.mine.toFixed(3) + " ETH" + (h.claimed ? "" : " · unclaimed"), payColor: h.mine == null ? "var(--ink-faint)" : "var(--ink)",
     bg: h.mine != null && !h.claimed ? "rgba(200,241,53,0.06)" : "transparent",
   }));
   const claim = async () => {
     if (!me || stage !== 2) return;
     setBusy(true); setErr("");
-    try { await post("/api/payroll/claim", { employeeId: me.id, epochId: f.epochId }); setShown(true); setCoinsAt(performance.now()); await reload(); } catch (e: unknown) { setErr(errorText(e)); }
+    try {
+      // 1. Try direct onchain claim via user browser wallet if available
+      const { getBrowserWalletClient, CONTRACT_ADDRESSES, ROBINHOOD_TESTNET } = await import("@/lib/chain/client");
+      const { PAYROLL_DISTRIBUTOR_ABI } = await import("@/lib/chain/abi");
+      const walletClient = getBrowserWalletClient();
+      if (walletClient && f?.proof) {
+        const [account] = await walletClient.getAddresses();
+        if (account) {
+          await walletClient.writeContract({
+            address: CONTRACT_ADDRESSES.payrollDistributor,
+            abi: PAYROLL_DISTRIBUTOR_ABI,
+            functionName: "claim",
+            args: [BigInt(f.epochId), BigInt(me.id), BigInt(Math.floor(f.amount * 1e18)), f.proof.proof],
+            account,
+            chain: ROBINHOOD_TESTNET,
+          });
+        }
+      }
+      // 2. Sync with internal state
+      await post("/api/payroll/claim", { employeeId: me.id, epochId: f.epochId });
+      setShown(true);
+      setCoinsAt(performance.now());
+      await reload();
+    } catch (e: unknown) {
+      setErr(errorText(e));
+    }
     setBusy(false);
   };
   const paydayAnim = paid && performance.now() - coinsAt < 3200 ? "cheer" : stage === 2 ? "bow" : "idle";
@@ -57,10 +82,10 @@ export default function PayrollPage() {
     <AppShell active="payroll" title="Payroll">
 <main className="vin" style={{padding: 'clamp(20px,3vw,36px)', maxWidth: '1800px', margin: '0 auto'}}>
 <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '12px'}}>
-<div style={{background: '#151A13', border: '1px solid #263023', borderRadius: '18px', padding: '18px 20px'}}><div style={{fontSize: '13px', color: '#8E978A'}}>Current payroll pool</div><div style={{fontSize: '30px', fontWeight: '600', lineHeight: '1.3'}}>{poolStr} ETH</div><div style={{fontSize: '13px', color: '#8E978A'}}>PayrollVault, epoch {epochId}</div></div>
-<div style={{background: '#151A13', border: '1px solid #263023', borderRadius: '18px', padding: '18px 20px'}}><div style={{fontSize: '13px', color: '#8E978A'}}>Next payday</div><div style={{fontSize: '30px', fontWeight: '600', lineHeight: '1.3', color: '#C8F135'}}>{payday}</div><div style={{fontSize: '13px', color: '#8E978A'}}>Epoch closes and finalizes</div></div>
-<div style={{background: '#151A13', border: '1px solid #263023', borderRadius: '18px', padding: '18px 20px'}}><div style={{fontSize: '13px', color: '#8E978A'}}>Your shares</div><div style={{fontSize: '30px', fontWeight: '600', lineHeight: '1.3'}}>{sharesStr}</div><div style={{fontSize: '13px', color: '#8E978A'}}>Performance × active time</div></div>
-<div style={{background: '#151A13', border: '1px solid #263023', borderRadius: '18px', padding: '18px 20px'}}><div style={{fontSize: '13px', color: '#8E978A'}}>{label}</div><div style={{fontSize: '30px', fontWeight: '600', lineHeight: '1.3'}}>{amountStr} ETH</div><div style={{fontSize: '13px', color: '#8E978A'}}>{statusShort}</div></div>
+<div style={{background: 'var(--card)', border: '1px solid var(--border-soft)', borderRadius: '18px', padding: '18px 20px'}}><div style={{fontSize: '13px', color: 'var(--ink-dimmer)'}}>Current payroll pool</div><div style={{fontSize: '30px', fontWeight: '600', lineHeight: '1.3'}}>{poolStr} ETH</div><div style={{fontSize: '13px', color: 'var(--ink-dimmer)'}}>PayrollVault, epoch {epochId}</div></div>
+<div style={{background: 'var(--card)', border: '1px solid var(--border-soft)', borderRadius: '18px', padding: '18px 20px'}}><div style={{fontSize: '13px', color: 'var(--ink-dimmer)'}}>Next payday</div><div style={{fontSize: '30px', fontWeight: '600', lineHeight: '1.3', color: 'var(--lime-ink)'}}>{payday}</div><div style={{fontSize: '13px', color: 'var(--ink-dimmer)'}}>Epoch closes and finalizes</div></div>
+<div style={{background: 'var(--card)', border: '1px solid var(--border-soft)', borderRadius: '18px', padding: '18px 20px'}}><div style={{fontSize: '13px', color: 'var(--ink-dimmer)'}}>Your shares</div><div style={{fontSize: '30px', fontWeight: '600', lineHeight: '1.3'}}>{sharesStr}</div><div style={{fontSize: '13px', color: 'var(--ink-dimmer)'}}>Performance × active time</div></div>
+<div style={{background: 'var(--card)', border: '1px solid var(--border-soft)', borderRadius: '18px', padding: '18px 20px'}}><div style={{fontSize: '13px', color: 'var(--ink-dimmer)'}}>{label}</div><div style={{fontSize: '30px', fontWeight: '600', lineHeight: '1.3'}}>{amountStr} ETH</div><div style={{fontSize: '13px', color: 'var(--ink-dimmer)'}}>{statusShort}</div></div>
 </div>
 
 <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: '16px', marginTop: '16px', alignItems: 'start'}}>
@@ -95,41 +120,41 @@ export default function PayrollPage() {
 </section>
 
 <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
-<section style={{background: '#151A13', border: '1px solid #263023', borderRadius: '22px', padding: '22px'}}>
+<section style={{background: 'var(--card)', border: '1px solid var(--border-soft)', borderRadius: '22px', padding: '22px'}}>
 <h2 style={{margin: '0 0 12px', fontSize: '17px', fontWeight: '600'}}>What each status means</h2>
 <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '10px'}}>
 {legend.map((l, i) => (<Fragment key={i}>
-<div className="tr" style={{border: `1px solid ${l.border}`, background: l.bg, borderRadius: '14px', padding: '14px 16px', fontSize: '14px', color: '#8E978A'}}><span style={{display: 'block', color: '#E9EDE2', fontWeight: '600', fontSize: '15px'}}>{l.name}</span>{l.text}</div>
+<div className="tr" style={{border: `1px solid ${l.border}`, background: l.bg, borderRadius: '14px', padding: '14px 16px', fontSize: '14px', color: 'var(--ink-dimmer)'}}><span style={{display: 'block', color: 'var(--ink)', fontWeight: '600', fontSize: '15px'}}>{l.name}</span>{l.text}</div>
 </Fragment>))}
 </div>
 </section>
-<section style={{background: '#151A13', border: '1px solid #263023', borderRadius: '22px', padding: '22px'}}>
-<div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '12px'}}><h2 style={{margin: '0', fontSize: '17px', fontWeight: '600'}}>Revenue allocation</h2><span style={{fontSize: '13px', color: '#8E978A'}}>Set in protocol config</span></div>
-<div style={{display: 'flex', height: '14px', borderRadius: '7px', overflow: 'hidden', marginTop: '14px'}}><span className="grow" style={{width: `${cfg.payrollPct}%`, background: '#C8F135'}} /><span style={{width: `${cfg.treasuryPct}%`, background: '#3A4436'}} /></div>
-<div style={{display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '8px', fontSize: '14px', marginTop: '8px'}}><span>Employee payroll pool <span style={{color: '#8E978A'}}>{cfg.payrollPct}%</span></span><span>Protocol treasury <span style={{color: '#8E978A'}}>{cfg.treasuryPct}%</span></span></div>
+<section style={{background: 'var(--card)', border: '1px solid var(--border-soft)', borderRadius: '22px', padding: '22px'}}>
+<div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '12px'}}><h2 style={{margin: '0', fontSize: '17px', fontWeight: '600'}}>Revenue allocation</h2><span style={{fontSize: '13px', color: 'var(--ink-dimmer)'}}>Set in protocol config</span></div>
+<div style={{display: 'flex', height: '14px', borderRadius: '7px', overflow: 'hidden', marginTop: '14px'}}><span className="grow" style={{width: `${cfg.payrollPct}%`, background: '#C8F135'}} /><span style={{width: `${cfg.treasuryPct}%`, background: 'var(--line-strong)'}} /></div>
+<div style={{display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '8px', fontSize: '14px', marginTop: '8px'}}><span>Employee payroll pool <span style={{color: 'var(--ink-dimmer)'}}>{cfg.payrollPct}%</span></span><span>Protocol treasury <span style={{color: 'var(--ink-dimmer)'}}>{cfg.treasuryPct}%</span></span></div>
 </section>
-<div style={{background: '#151A13', border: '1px solid #263023', borderRadius: '14px', padding: '18px 20px', fontFamily: "'Geist Mono', monospace", fontSize: '14px', color: '#C9D0C2', lineHeight: '1.8', overflowX: 'auto'}}>
-<div><span style={{color: '#8E978A'}}>employeeShares</span> = performanceWeight × activeTimeWeight</div>
-<div><span style={{color: '#8E978A'}}>employeePayroll</span> = payrollPool × employeeShares / totalEligibleShares</div>
+<div style={{background: 'var(--card)', border: '1px solid var(--border-soft)', borderRadius: '14px', padding: '18px 20px', fontFamily: "'Geist Mono', monospace", fontSize: '14px', color: 'var(--ink-soft)', lineHeight: '1.8', overflowX: 'auto'}}>
+<div><span style={{color: 'var(--ink-dimmer)'}}>employeeShares</span> = performanceWeight × activeTimeWeight</div>
+<div><span style={{color: 'var(--ink-dimmer)'}}>employeePayroll</span> = payrollPool × employeeShares / totalEligibleShares</div>
 </div>
 </div>
 </div>
 
 <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'space-between', gap: '10px 20px', margin: '36px 0 14px'}}>
 <h2 style={{margin: '0', fontSize: '20px', fontWeight: '600'}}>Previous payrolls</h2>
-<span style={{fontSize: '14px', color: '#8E978A'}}>Every epoch is reproducible from public inputs</span>
+<span style={{fontSize: '14px', color: 'var(--ink-dimmer)'}}>Every epoch is reproducible from public inputs</span>
 </div>
-<div style={{background: '#151A13', border: '1px solid #263023', borderRadius: '20px', overflowX: 'auto'}}>
+<div style={{background: 'var(--card)', border: '1px solid var(--border-soft)', borderRadius: '20px', overflowX: 'auto'}}>
 <div style={{minWidth: '760px'}}>
-<div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1.3fr 1fr 1fr 0.8fr', gap: '14px', padding: '12px 18px', borderBottom: '1px solid #2E382A', fontSize: '13px', color: '#8E978A'}}>
+<div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1.3fr 1fr 1fr 0.8fr', gap: '14px', padding: '12px 18px', borderBottom: '1px solid var(--line)', fontSize: '13px', color: 'var(--ink-dimmer)'}}>
 <span>Epoch</span><span style={{textAlign: 'right'}}>Payroll pool</span><span>Merkle root</span><span>Finalized</span><span style={{textAlign: 'right'}}>Your pay</span><span />
 </div>
 {history.map((h, i) => (<Fragment key={i}>
-<div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1.3fr 1fr 1fr 0.8fr', gap: '14px', padding: '14px 18px', borderBottom: '1px solid #222A20', alignItems: 'center', background: h.bg}}>
+<div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1.3fr 1fr 1fr 0.8fr', gap: '14px', padding: '14px 18px', borderBottom: '1px solid var(--border)', alignItems: 'center', background: h.bg}}>
 <span style={{fontWeight: '500'}}>{h.epoch}</span>
 <span style={{textAlign: 'right'}}>{h.pool} ETH</span>
 <span style={{fontFamily: "'Geist Mono', monospace", fontSize: '13px'}}>{h.root}</span>
-<span style={{color: '#AEB7A8'}}>{h.when}</span>
+<span style={{color: 'var(--ink-dim)'}}>{h.when}</span>
 <span style={{textAlign: 'right', color: h.payColor}}>{h.pay}</span>
 <Link href="/proof" style={{fontSize: '14px'}}>Proof ↗</Link>
 </div>
@@ -137,7 +162,7 @@ export default function PayrollPage() {
 </div>
 </div>
 </main>
-      {err && <p style={{ padding: "0 clamp(20px,3vw,36px)", color: "#E0A44A" }}>{err}</p>}
+      {err && <p style={{ padding: "0 clamp(20px,3vw,36px)", color: "var(--amber-ink)" }}>{err}</p>}
     </AppShell>
   );
 }

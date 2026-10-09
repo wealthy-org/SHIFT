@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useLazyComponent } from "./office3d/mini/useLazy";
+import { useTheme } from "@/lib/useTheme";
 
 const loadOfficeTeaser = () => import("./office3d/mini/OfficeTeaser");
 const loadHeroOffice = () => import("./office3d/mini/HeroOffice");
@@ -47,8 +48,8 @@ const EMP = [
 ];
 
 const CHIP: Record<string, { bg: string; fg: string; b: string }> = {
-  "CLOCKED IN": { bg: "transparent", fg: "#C9D0C2", b: "#4A5446" },
-  WORKING: { bg: "rgba(200,241,53,0.12)", fg: LIME, b: "rgba(200,241,53,0.35)" },
+  "CLOCKED IN": { bg: "transparent", fg: "var(--ink-dim)", b: "var(--border)" },
+  WORKING: { bg: "rgba(200,241,53,0.12)", fg: "var(--lime-ink)", b: "rgba(200,241,53,0.35)" },
   PROMOTED: { bg: LIME, fg: "#0F130E", b: LIME },
   "SHIFT COMPLETE": { bg: "#2A3127", fg: "#E9EDE2", b: "#3A4436" },
   PAID: { bg: "#E4E7DA", fg: "#0F130E", b: "#E4E7DA" },
@@ -70,8 +71,8 @@ const FLOW = [["Revenue", "Pons fees"], ["PayrollVault", "contract"], ["Payroll 
 const PROOFS = [["Employee Created", "EmployeeRegistry"], ["Token Launched", "PonsAdapter"], ["Shift Started", "ShiftManager"], ["Shift Finalized", "ShiftManager"], ["Rank Assigned", "RankManager"], ["Payroll Funded", "PayrollVault"], ["Payroll Epoch Finalized", "PayrollDistributor"], ["Payroll Claimed", "PayrollDistributor"]];
 const TICKER_SRC: [string, string][] = [
   ["EMP-0247 clocked in", LIME], ["$KASE launched on Pons", "#E4E7DA"], ["Ada Okonji promoted to Director", LIME],
-  ["Shift finalized, result hash stored", "#8E978A"], ["$VOSS snapshot recorded", "#8E978A"], ["Payroll epoch finalized", "#E4E7DA"],
-  ["Rhea Duval claimed payroll", LIME], ["EMP-0312 started a shift", "#8E978A"], ["$OKO volume up this shift", "#E4E7DA"], ["Merkle root published", "#8E978A"],
+  ["Shift finalized, result hash stored", "var(--ink-dimmer)"], ["$VOSS snapshot recorded", "var(--ink-dimmer)"], ["Payroll epoch finalized", "#E4E7DA"],
+  ["Rhea Duval claimed payroll", LIME], ["EMP-0312 started a shift", "var(--ink-dimmer)"], ["$OKO volume up this shift", "#E4E7DA"], ["Merkle root published", "var(--ink-dimmer)"],
 ];
 
 export default function Shift() {
@@ -79,6 +80,7 @@ export default function Shift() {
   const [now, setNow] = useState<number | null>(null);
   const [selected, setSelected] = useState(0);
   const [claimedAt, setClaimedAt] = useState<number | null>(null);
+  const { theme, toggle: toggleTheme } = useTheme();
   const [teaserRef, teaserNear] = useNearViewport<HTMLDivElement>();
   const OfficeTeaserC = useLazyComponent(loadOfficeTeaser, teaserNear);
   // The hero is above the fold, so unlike the teaser further down, this one
@@ -131,8 +133,8 @@ export default function Shift() {
       mcap: (e.mcap * (1 + 0.025 * Math.sin((tick + off) / 2))).toFixed(1),
       timer: mmss(((tick + off * 9) * 10) % 300),
       pay: (e.pay + tick * 0.0006 * (ri + 1)).toFixed(3),
-      bg: sel ? "#1A2117" : "#141912",
-      border: sel ? LIME : "#263023",
+      bg: sel ? 'rgba(200,241,53,.12)' : 'var(--card)',
+      border: sel ? LIME : "var(--border-soft)",
       pressed: sel,
       pick: () => setSelected(off),
     };
@@ -150,10 +152,10 @@ export default function Shift() {
     return {
       name: r[0], min: r[1],
       h: 96 + i * 30,
-      bg: cur ? LIME : lit ? "#2A3524" : "#161B14",
-      border: cur ? LIME : lit ? "#3F4E36" : "#232B20",
-      fg: cur ? "#0F130E" : lit ? "#E9EDE2" : "#6E776A",
-      sub: cur ? "#2F3A16" : lit ? "#AEB7A8" : "#5F685B",
+      bg: cur ? LIME : lit ? 'rgba(200,241,53,.16)' : 'var(--border-soft)',
+      border: cur ? LIME : lit ? 'rgba(200,241,53,.4)' : 'var(--border)',
+      fg: cur ? "#0F130E" : lit ? "var(--ink)" : "#6E776A",
+      sub: cur ? "#2F3A16" : lit ? "var(--ink-dim)" : "#5F685B",
       markOpacity: cur ? 1 : 0,
     };
   });
@@ -179,10 +181,10 @@ export default function Shift() {
   const fa = tick % 6;
   const flow = FLOW.map((f, i) => ({
     n: i + 1, name: f[0], where: f[1],
-    bg: i === fa ? "rgba(200,241,53,0.08)" : "#121710",
-    border: i === fa ? "rgba(200,241,53,0.5)" : "#222A20",
-    dotBg: i <= fa ? LIME : "#232B20",
-    dotFg: i <= fa ? "#0F130E" : "#8E978A",
+    bg: i === fa ? "rgba(200,241,53,0.12)" : "var(--panel)",
+    border: i === fa ? "rgba(200,241,53,0.5)" : "var(--border)",
+    dotBg: i <= fa ? LIME : "var(--border)",
+    dotFg: i <= fa ? "#0F130E" : "var(--ink-dimmer)",
   }));
 
   const pa = Math.floor(tick / 2) % 8;
@@ -194,11 +196,11 @@ export default function Shift() {
 
   return (
     <>
-<div className="sh" style={{background: '#0F130E', color: '#E9EDE2', fontFamily: "'Geist', 'Helvetica Neue', Helvetica, sans-serif", fontSize: '17px', lineHeight: '1.55', overflowX: 'hidden', minHeight: '100vh', fontVariantNumeric: 'tabular-nums'}}>
+<div className="sh sh-landing" style={{background: 'var(--bg)', color: 'var(--ink)', fontFamily: "'Geist', 'Helvetica Neue', Helvetica, sans-serif", fontSize: '17px', lineHeight: '1.55', overflowX: 'hidden', minHeight: '100vh', fontVariantNumeric: 'tabular-nums'}}>
 
-<header style={{position: 'sticky', top: '0', zIndex: '20', background: 'rgba(15,19,14,0.82)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', borderBottom: '1px solid #222A20'}}>
+<header style={{position: 'sticky', top: '0', zIndex: '20', background: 'rgba(var(--bg-rgb),0.82)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', borderBottom: '1px solid var(--border)'}}>
 <div style={{maxWidth: '1240px', margin: '0 auto', padding: '14px clamp(20px,4vw,48px)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px 32px'}}>
-<a href="#top" style={{textDecoration: 'none', color: '#E9EDE2', display: 'flex', alignItems: 'center', gap: '10px'}}>
+<a href="#top" style={{textDecoration: 'none', color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: '10px'}}>
 <span style={{width: '30px', height: '30px', borderRadius: '8px', background: '#C8F135', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
 <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="#0F130E" strokeWidth="2" /><path d="M8 4.5V8l2.4 1.6" fill="none" stroke="#0F130E" strokeWidth="2" strokeLinecap="round" /></svg>
 </span>
@@ -212,81 +214,88 @@ export default function Shift() {
 <a className="navlink" href="/proof">Proof</a>
 </nav>
 <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
-<span style={{display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#AEB7A8'}}>
+<span style={{display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--ink-dim)'}}>
 <span className="live" style={{width: '8px', height: '8px', borderRadius: '50%', background: '#C8F135', display: 'inline-block'}} />
 Shift active
 </span>
-<a href="/clock-in" className="btn-ghost" style={{textDecoration: 'none', color: '#E9EDE2', fontSize: '14px', fontWeight: '500', padding: '10px 16px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', border: '1px solid #3A4436', borderRadius: '999px'}}>Connect wallet</a>
+<button type="button" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} className="btn-ghost" style={{background: 'transparent', cursor: 'pointer', color: 'var(--ink)', width: '40px', height: '40px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-soft)', borderRadius: '999px'}}>
+{theme === 'dark' ? (
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4.5" stroke="currentColor" strokeWidth="1.8" /><path d="M12 2.5v2.4M12 19.1v2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+) : (
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20.8 14.3A9 9 0 1 1 9.7 3.2a7 7 0 0 0 11.1 11.1Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /></svg>
+)}
+</button>
+<a href="/clock-in" className="btn-ghost" style={{textDecoration: 'none', color: 'var(--ink)', fontSize: '14px', fontWeight: '500', padding: '10px 16px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', border: '1px solid var(--border-soft)', borderRadius: '999px'}}>Connect wallet</a>
 </div>
 </div>
 </header>
 
 <section id="top" style={{maxWidth: '1240px', margin: '0 auto', padding: 'clamp(48px,7vw,104px) clamp(20px,4vw,48px) clamp(48px,6vw,80px)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 470px), 1fr))', gap: '56px', alignItems: 'center'}}>
 <div>
-<h1 aria-label="SHIFT" style={{margin: '0 0 0 -6px', fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '900', fontSize: 'clamp(120px, 17vw, 252px)', lineHeight: '0.8', letterSpacing: '0', display: 'flex', color: '#E9EDE2'}}>
+<h1 aria-label="SHIFT" style={{margin: '0 0 0 -6px', fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '900', fontSize: 'clamp(120px, 17vw, 252px)', lineHeight: '0.8', letterSpacing: '0', display: 'flex', color: 'var(--ink)'}}>
 <span aria-hidden="true" style={{overflow: 'hidden', display: 'inline-block', paddingBottom: '6px'}}><span className="ln" style={{animationDelay: '.05s'}}>S</span></span>
 <span aria-hidden="true" style={{overflow: 'hidden', display: 'inline-block', paddingBottom: '6px'}}><span className="ln" style={{animationDelay: '.13s'}}>H</span></span>
 <span aria-hidden="true" style={{overflow: 'hidden', display: 'inline-block', paddingBottom: '6px'}}><span className="ln" style={{animationDelay: '.21s'}}>I</span></span>
 <span aria-hidden="true" style={{overflow: 'hidden', display: 'inline-block', paddingBottom: '6px'}}><span className="ln" style={{animationDelay: '.29s'}}>F</span></span>
-<span aria-hidden="true" style={{overflow: 'hidden', display: 'inline-block', paddingBottom: '6px'}}><span className="ln" style={{animationDelay: '.37s', color: '#C8F135'}}>T</span></span>
+<span aria-hidden="true" style={{overflow: 'hidden', display: 'inline-block', paddingBottom: '6px'}}><span className="ln" style={{animationDelay: '.37s', color: 'var(--lime-ink)'}}>T</span></span>
 </h1>
 <p className="fd" style={{animationDelay: '.7s', margin: '28px 0 0', fontSize: 'clamp(24px, 2.5vw, 32px)', fontWeight: '500', lineHeight: '1.2', letterSpacing: '-0.01em', maxWidth: '18ch'}}>Clock in. Launch. Perform. Get paid.</p>
-<p className="fd" style={{animationDelay: '.85s', margin: '18px 0 0', color: '#AEB7A8', maxWidth: '44ch'}}>The onchain workforce powered by Pons. You get hired, your employee token launches, the market grades your shift, and payday is provable on Robinhood Chain.</p>
+<p className="fd" style={{animationDelay: '.85s', margin: '18px 0 0', color: 'var(--ink-dim)', maxWidth: '44ch'}}>The onchain workforce powered by Pons. You get hired, your employee token launches, the market grades your shift, and payday is provable on Robinhood Chain.</p>
 <div className="fd" style={{animationDelay: '1s', display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '36px'}}>
 <a href="/clock-in" className="btn-lime" style={{textDecoration: 'none', background: '#C8F135', color: '#0F130E', fontWeight: '600', fontSize: '16px', padding: '0 26px', minHeight: '52px', display: 'inline-flex', alignItems: 'center', borderRadius: '999px'}}>Clock in</a>
-<a href="#how" className="btn-ghost" style={{textDecoration: 'none', color: '#E9EDE2', fontWeight: '500', fontSize: '16px', padding: '0 24px', minHeight: '52px', display: 'inline-flex', alignItems: 'center', border: '1px solid #3A4436', borderRadius: '999px'}}>How SHIFT works</a>
+<a href="#how" className="btn-ghost" style={{textDecoration: 'none', color: 'var(--ink)', fontWeight: '500', fontSize: '16px', padding: '0 24px', minHeight: '52px', display: 'inline-flex', alignItems: 'center', border: '1px solid var(--border-soft)', borderRadius: '999px'}}>How SHIFT works</a>
 </div>
 </div>
 
 <div style={{position: 'relative', height: '560px', maxWidth: '560px', width: '100%', justifySelf: 'center'}}>
-<div className="fd" style={{animationDelay: '.3s', position: 'absolute', inset: '0', borderRadius: '22px', overflow: 'hidden', border: '1px solid #2A3227', background: '#0F130E'}}>
-{HeroOfficeC ? <HeroOfficeC /> : (
+<div className="fd" style={{animationDelay: '.3s', position: 'absolute', inset: '0', borderRadius: '22px', overflow: 'hidden', border: '1px solid var(--border-soft)', background: 'var(--card)'}}>
+{HeroOfficeC ? <HeroOfficeC theme={theme} /> : (
 <div aria-hidden="true" style={{width: '100%', height: '100%', position: 'relative', background: 'radial-gradient(60% 50% at 50% 55%, rgba(200,241,53,.06), transparent)'}}>
 <div style={{position: 'absolute', left: '50%', top: '58%', transform: 'translate(-50%,-50%)', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px'}}>
-{Array.from({length: 6}, (_, i) => (<Fragment key={i}><div className="sk" style={{width: '64px', height: '44px', borderRadius: '8px'}} /></Fragment>))}
+{Array.from({length: 6}, (_, i) => (<Fragment key={i}><div className="hero-sk" style={{width: '64px', height: '44px', borderRadius: '8px'}} /></Fragment>))}
 </div>
 </div>
 )}
 </div>
 
-<div className="fd" style={{animationDelay: '.5s', position: 'absolute', left: '18px', top: '18px', background: 'rgba(15,19,14,.82)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', border: '1px solid #2A3227', borderRadius: '14px', padding: '12px 16px', pointerEvents: 'none'}}>
-<div style={{display: 'flex', justifyContent: 'space-between', gap: '18px', fontSize: '12px', color: '#8E978A'}}>
+<div className="fd" style={{animationDelay: '.5s', position: 'absolute', left: '18px', top: '18px', background: 'rgba(var(--bg-rgb),.82)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', border: '1px solid var(--border-soft)', borderRadius: '14px', padding: '12px 16px', pointerEvents: 'none'}}>
+<div style={{display: 'flex', justifyContent: 'space-between', gap: '18px', fontSize: '12px', color: 'var(--ink-dimmer)'}}>
 <span>Office time clock</span><span>Robinhood Chain</span>
 </div>
-<div style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: '34px', lineHeight: '1', marginTop: '4px', color: '#C8F135', letterSpacing: '0.02em'}}>{clock}</div>
+<div style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: '34px', lineHeight: '1', marginTop: '4px', color: 'var(--lime-ink)', letterSpacing: '0.02em'}}>{clock}</div>
 </div>
 
 <div className="badge-in" style={{position: 'absolute', right: '18px', bottom: '18px', pointerEvents: 'none'}}>
-<div style={{background: 'rgba(29,35,27,.9)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', border: '1px solid #39442F', borderRadius: '14px', padding: '12px 14px', boxShadow: '0 20px 50px rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', gap: '10px'}}>
+<div style={{background: 'rgba(var(--bg-rgb),.9)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', border: '1px solid var(--border-soft)', borderRadius: '14px', padding: '12px 14px', boxShadow: '0 20px 50px rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', gap: '10px'}}>
 <svg width="34" height="34" viewBox="0 0 44 44" aria-hidden="true"><rect width="44" height="44" rx="11" fill="#C8F135" /><circle cx="22" cy="17" r="8" fill="#0F130E" /><rect x="9" y="28" width="26" height="16" rx="8" fill="#0F130E" /></svg>
 <div>
-<div style={{fontWeight: '600', fontSize: '14px', lineHeight: '1.2'}}>Mara Voss <span style={{fontFamily: "'Geist Mono', monospace", fontWeight: '400', color: '#C8F135'}}>$VOSS</span></div>
-<div style={{fontSize: '12px', color: '#8E978A'}}>{badgeRank} · Trading</div>
+<div style={{fontWeight: '600', fontSize: '14px', lineHeight: '1.2'}}>Mara Voss <span style={{fontFamily: "'Geist Mono', monospace", fontWeight: '400', color: 'var(--lime-ink)'}}>$VOSS</span></div>
+<div style={{fontSize: '12px', color: 'var(--ink-dimmer)'}}>{badgeRank} · Trading</div>
 </div>
 </div>
 </div>
 
-<div className="fd" style={{animationDelay: '.7s', position: 'absolute', left: '18px', bottom: '18px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(15,19,14,.82)', border: '1px solid #2A3227', borderRadius: '999px', padding: '7px 12px', fontSize: '13px', color: '#AEB7A8', pointerEvents: 'none'}}>
+<div className="fd" style={{animationDelay: '.7s', position: 'absolute', left: '18px', bottom: '18px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(var(--bg-rgb),.82)', border: '1px solid var(--border-soft)', borderRadius: '999px', padding: '7px 12px', fontSize: '13px', color: 'var(--ink-dim)', pointerEvents: 'none'}}>
 <span className="live" style={{width: '8px', height: '8px', borderRadius: '50%', background: '#C8F135', display: 'inline-block'}} />
 Shift active
 </div>
 </div>
 </section>
 
-<div style={{borderTop: '1px solid #222A20', borderBottom: '1px solid #222A20'}}>
+<div style={{borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)'}}>
 <div style={{maxWidth: '1240px', margin: '0 auto', padding: '0 clamp(20px,4vw,48px)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))'}}>
 <div style={{padding: '22px 0', display: 'flex', alignItems: 'center', gap: '12px'}}>
 <span className="live" style={{width: '10px', height: '10px', borderRadius: '50%', background: '#C8F135', display: 'inline-block'}} />
 <span style={{fontWeight: '600', fontSize: '18px'}}>Shift active</span>
 </div>
-<div style={{padding: '22px 0'}}><span style={{fontWeight: '600', fontSize: '22px'}}>{working}</span> <span style={{color: '#8E978A'}}>employees working</span></div>
-<div style={{padding: '22px 0'}}><span style={{fontWeight: '600', fontSize: '22px'}}>{launches}</span> <span style={{color: '#8E978A'}}>active launches</span></div>
-<div style={{padding: '22px 0'}}><span style={{color: '#8E978A'}}>Next payday</span> <span style={{fontWeight: '600', fontSize: '22px', color: '#C8F135'}}>{payday}</span></div>
+<div style={{padding: '22px 0'}}><span style={{fontWeight: '600', fontSize: '22px'}}>{working}</span> <span style={{color: 'var(--ink-dimmer)'}}>employees working</span></div>
+<div style={{padding: '22px 0'}}><span style={{fontWeight: '600', fontSize: '22px'}}>{launches}</span> <span style={{color: 'var(--ink-dimmer)'}}>active launches</span></div>
+<div style={{padding: '22px 0'}}><span style={{color: 'var(--ink-dimmer)'}}>Next payday</span> <span style={{fontWeight: '600', fontSize: '22px', color: 'var(--lime-ink)'}}>{payday}</span></div>
 </div>
 </div>
 
-<div className="mqwrap" style={{overflow: 'hidden', borderBottom: '1px solid #222A20', padding: '14px 0', background: '#121710'}} aria-label="Recent onchain activity">
-<div className="mq" style={{display: 'flex', width: 'max-content', gap: '48px', fontSize: '14px', color: '#AEB7A8', whiteSpace: 'nowrap'}}>
+<div className="mqwrap" style={{overflow: 'hidden', borderBottom: '1px solid var(--border)', padding: '14px 0', background: 'var(--panel)'}} aria-label="Recent onchain activity">
+<div className="mq" style={{display: 'flex', width: 'max-content', gap: '48px', fontSize: '14px', color: 'var(--ink-dim)', whiteSpace: 'nowrap'}}>
 {ticker.map((t, i) => (<Fragment key={i}>
 <span style={{display: 'inline-flex', alignItems: 'center', gap: '10px'}}><span style={{width: '6px', height: '6px', borderRadius: '50%', background: t.dot, display: 'inline-block'}} />{t.text}</span>
 </Fragment>))}
@@ -296,23 +305,23 @@ Shift active
 <section id="how" style={{maxWidth: '1240px', margin: '0 auto', padding: 'clamp(80px,10vw,140px) clamp(20px,4vw,48px) 0'}}>
 <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: '24px 64px', alignItems: 'end'}}>
 <h2 style={{margin: '0', fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: 'clamp(48px, 6vw, 84px)', lineHeight: '0.92', letterSpacing: '0.005em'}}>A workday that lasts five minutes</h2>
-<p style={{margin: '0', color: '#AEB7A8', maxWidth: '46ch'}}>Every shift runs on a fixed clock. Fifteen snapshots, one every twenty seconds, record how your token performs. The average decides your score, so one lucky block can't carry you.</p>
+<p style={{margin: '0', color: 'var(--ink-dim)', maxWidth: '46ch'}}>Every shift runs on a fixed clock. Fifteen snapshots, one every twenty seconds, record how your token performs. The average decides your score, so one lucky block can't carry you.</p>
 </div>
 
-<div style={{marginTop: '56px', background: '#151A13', border: '1px solid #263023', borderRadius: '26px', padding: 'clamp(22px, 3vw, 40px)'}}>
+<div style={{marginTop: '56px', background: 'var(--card)', border: '1px solid var(--border-soft)', borderRadius: '26px', padding: 'clamp(22px, 3vw, 40px)'}}>
 <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px', marginBottom: '36px'}}>
-<div><div style={{fontSize: '13px', color: '#8E978A'}}>Snapshot</div><div style={{fontSize: '30px', fontWeight: '600'}}>{shift.snap} <span style={{color: '#5F685B', fontSize: '20px'}}>/ 15</span></div></div>
-<div><div style={{fontSize: '13px', color: '#8E978A'}}>Elapsed</div><div style={{fontSize: '30px', fontWeight: '600'}}>{shift.elapsed}</div></div>
-<div><div style={{fontSize: '13px', color: '#8E978A'}}>Performance score</div><div style={{fontSize: '30px', fontWeight: '600', color: '#C8F135'}}>{shift.score}</div></div>
-<div><div style={{fontSize: '13px', color: '#8E978A'}}>Rank</div><div style={{fontSize: '30px', fontWeight: '600'}}>{shift.rank}</div></div>
+<div><div style={{fontSize: '13px', color: 'var(--ink-dimmer)'}}>Snapshot</div><div style={{fontSize: '30px', fontWeight: '600'}}>{shift.snap} <span style={{color: '#5F685B', fontSize: '20px'}}>/ 15</span></div></div>
+<div><div style={{fontSize: '13px', color: 'var(--ink-dimmer)'}}>Elapsed</div><div style={{fontSize: '30px', fontWeight: '600'}}>{shift.elapsed}</div></div>
+<div><div style={{fontSize: '13px', color: 'var(--ink-dimmer)'}}>Performance score</div><div style={{fontSize: '30px', fontWeight: '600', color: 'var(--lime-ink)'}}>{shift.score}</div></div>
+<div><div style={{fontSize: '13px', color: 'var(--ink-dimmer)'}}>Rank</div><div style={{fontSize: '30px', fontWeight: '600'}}>{shift.rank}</div></div>
 </div>
 
 <div style={{position: 'relative', height: '64px'}}>
-<div style={{position: 'absolute', left: '0', right: '0', top: '22px', height: '4px', borderRadius: '2px', background: '#283024'}} />
+<div style={{position: 'absolute', left: '0', right: '0', top: '22px', height: '4px', borderRadius: '2px', background: 'var(--border-soft)'}} />
 <div className="tr" style={{position: 'absolute', left: '0', top: '22px', height: '4px', borderRadius: '2px', background: '#C8F135', width: `${shift.pct}%`}} />
-<span style={{position: 'absolute', left: '0', top: '14px', width: '20px', height: '20px', marginLeft: '-2px', borderRadius: '50%', background: '#C8F135', border: '4px solid #151A13'}} />
+<span style={{position: 'absolute', left: '0', top: '14px', width: '20px', height: '20px', marginLeft: '-2px', borderRadius: '50%', background: '#C8F135', border: '4px solid var(--card)'}} />
 {shift.dots.map((d, i) => (<Fragment key={i}>
-<span className="tr" style={{position: 'absolute', top: '16px', left: `${d.left}%`, width: '16px', height: '16px', marginLeft: '-8px', borderRadius: '50%', background: d.bg, border: '3px solid #151A13'}} />
+<span className="tr" style={{position: 'absolute', top: '16px', left: `${d.left}%`, width: '16px', height: '16px', marginLeft: '-8px', borderRadius: '50%', background: d.bg, border: '3px solid var(--card)'}} />
 </Fragment>))}
 <div style={{position: 'absolute', left: '0', right: '0', top: '46px', display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#6E776A'}}>
 <span>00:00</span><span>01:00</span><span>02:00</span><span>03:00</span><span>04:00</span><span>05:00</span>
@@ -322,47 +331,47 @@ Shift active
 <div style={{minHeight: '120px', marginTop: '28px', display: 'flex', alignItems: 'center'}}>
 {shift.done && (<>
 <div className="stamp-now" style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px 28px', border: '2px solid #C8F135', borderRadius: '16px', padding: '16px 26px', transform: 'rotate(-1.5deg)', background: 'rgba(200,241,53,.08)'}}>
-<span style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '900', fontSize: '46px', color: '#C8F135', letterSpacing: '0.04em', lineHeight: '1'}}>PROMOTED</span>
+<span style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '900', fontSize: '46px', color: 'var(--lime-ink)', letterSpacing: '0.04em', lineHeight: '1'}}>PROMOTED</span>
 <span style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: '32px', lineHeight: '1'}}>INTERN → MANAGER</span>
-<span style={{color: '#AEB7A8'}}>Performance score 53.4</span>
+<span style={{color: 'var(--ink-dim)'}}>Performance score 53.4</span>
 </div>
 </>)}
 {shift.running && (<>
-<p style={{margin: '0', color: '#8E978A', maxWidth: '60ch'}}>Snapshot {shift.snap} recorded. Market cap, volume, holders, liquidity and stability are normalized and folded into the running score.</p>
+<p style={{margin: '0', color: 'var(--ink-dimmer)', maxWidth: '60ch'}}>Snapshot {shift.snap} recorded. Market cap, volume, holders, liquidity and stability are normalized and folded into the running score.</p>
 </>)}
 </div>
 </div>
 
-<ol style={{listStyle: 'none', margin: '56px 0 0', padding: '0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1px', background: '#222A20', border: '1px solid #222A20', borderRadius: '20px', overflow: 'hidden'}}>
-<li style={{background: '#0F130E', padding: '26px 22px 30px'}}>
+<ol style={{listStyle: 'none', margin: '56px 0 0', padding: '0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1px', background: 'var(--border)', border: '1px solid var(--border)', borderRadius: '20px', overflow: 'hidden'}}>
+<li style={{background: 'var(--card)', padding: '26px 22px 30px'}}>
 <div style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: '40px', color: '#3E4A39', lineHeight: '1'}}>1</div>
 <div style={{fontWeight: '600', marginTop: '18px'}}>Connect wallet</div>
-<div style={{color: '#8E978A', fontSize: '15px', marginTop: '6px'}}>Any EVM wallet on Robinhood Chain.</div>
+<div style={{color: 'var(--ink-dimmer)', fontSize: '15px', marginTop: '6px'}}>Any EVM wallet on Robinhood Chain.</div>
 </li>
-<li style={{background: '#0F130E', padding: '26px 22px 30px'}}>
+<li style={{background: 'var(--card)', padding: '26px 22px 30px'}}>
 <div style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: '40px', color: '#3E4A39', lineHeight: '1'}}>2</div>
 <div style={{fontWeight: '600', marginTop: '18px'}}>Clock in</div>
-<div style={{color: '#8E978A', fontSize: '15px', marginTop: '6px'}}>SHIFT hires you with a permanent name, ticker, avatar and employee ID.</div>
+<div style={{color: 'var(--ink-dimmer)', fontSize: '15px', marginTop: '6px'}}>SHIFT hires you with a permanent name, ticker, avatar and employee ID.</div>
 </li>
-<li style={{background: '#0F130E', padding: '26px 22px 30px'}}>
+<li style={{background: 'var(--card)', padding: '26px 22px 30px'}}>
 <div style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: '40px', color: '#3E4A39', lineHeight: '1'}}>3</div>
 <div style={{fontWeight: '600', marginTop: '18px'}}>Launch on Pons</div>
-<div style={{color: '#8E978A', fontSize: '15px', marginTop: '6px'}}>Your employee token goes live as a real Pons market.</div>
+<div style={{color: 'var(--ink-dimmer)', fontSize: '15px', marginTop: '6px'}}>Your employee token goes live as a real Pons market.</div>
 </li>
-<li style={{background: '#0F130E', padding: '26px 22px 30px'}}>
+<li style={{background: 'var(--card)', padding: '26px 22px 30px'}}>
 <div style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: '40px', color: '#3E4A39', lineHeight: '1'}}>4</div>
 <div style={{fontWeight: '600', marginTop: '18px'}}>Work the shift</div>
-<div style={{color: '#8E978A', fontSize: '15px', marginTop: '6px'}}>Five minutes, fifteen snapshots. Closing your tab doesn't stop the clock.</div>
+<div style={{color: 'var(--ink-dimmer)', fontSize: '15px', marginTop: '6px'}}>Five minutes, fifteen snapshots. Closing your tab doesn't stop the clock.</div>
 </li>
-<li style={{background: '#0F130E', padding: '26px 22px 30px'}}>
+<li style={{background: 'var(--card)', padding: '26px 22px 30px'}}>
 <div style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: '40px', color: '#3E4A39', lineHeight: '1'}}>5</div>
 <div style={{fontWeight: '600', marginTop: '18px'}}>Get ranked</div>
-<div style={{color: '#8E978A', fontSize: '15px', marginTop: '6px'}}>A deterministic score sets your title, from Intern to CEO.</div>
+<div style={{color: 'var(--ink-dimmer)', fontSize: '15px', marginTop: '6px'}}>A deterministic score sets your title, from Intern to CEO.</div>
 </li>
-<li style={{background: '#0F130E', padding: '26px 22px 30px'}}>
-<div style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: '40px', color: '#C8F135', lineHeight: '1'}}>6</div>
+<li style={{background: 'var(--card)', padding: '26px 22px 30px'}}>
+<div style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: '40px', color: 'var(--lime-ink)', lineHeight: '1'}}>6</div>
 <div style={{fontWeight: '600', marginTop: '18px'}}>Payday</div>
-<div style={{color: '#8E978A', fontSize: '15px', marginTop: '6px'}}>Claim your share of the payroll vault, with proof attached.</div>
+<div style={{color: 'var(--ink-dimmer)', fontSize: '15px', marginTop: '6px'}}>Claim your share of the payroll vault, with proof attached.</div>
 </li>
 </ol>
 </section>
@@ -370,11 +379,11 @@ Shift active
 <section id="office" style={{maxWidth: '1240px', margin: '0 auto', padding: 'clamp(96px,11vw,160px) clamp(20px,4vw,48px) 0'}}>
 <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: '24px 64px', alignItems: 'end'}}>
 <h2 style={{margin: '0', fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: 'clamp(48px, 6vw, 84px)', lineHeight: '0.92'}}>The office is open</h2>
-<p style={{margin: '0', color: '#AEB7A8', maxWidth: '46ch'}}>Every desk is an employee and every employee is a live Pons market. Pick a desk to see who's working it and how the shift is going.</p>
+<p style={{margin: '0', color: 'var(--ink-dim)', maxWidth: '46ch'}}>Every desk is an employee and every employee is a live Pons market. Pick a desk to see who's working it and how the shift is going.</p>
 </div>
 
-<div ref={teaserRef} style={{marginTop: '32px', background: '#101511', border: '1px solid #222A20', borderRadius: '20px', overflow: 'hidden'}}>
-{OfficeTeaserC ? <OfficeTeaserC /> : <div style={{height: 220}} />}
+<div ref={teaserRef} style={{marginTop: '32px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '20px', overflow: 'hidden'}}>
+{OfficeTeaserC ? <OfficeTeaserC theme={theme} /> : <div style={{height: 220}} />}
 </div>
 
 <div style={{marginTop: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px'}}>
@@ -384,32 +393,32 @@ Shift active
 <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true" style={{flex: 'none'}}><rect width="44" height="44" rx="11" fill={e.c1} /><circle cx="22" cy="17" r="8" fill={e.c2} /><rect x="9" y="28" width="26" height="16" rx="8" fill={e.c2} /></svg>
 <span style={{flex: '1', minWidth: '0'}}>
 <span style={{display: 'block', fontWeight: '600', fontSize: '16px', lineHeight: '1.25'}}>{e.name}</span>
-<span style={{display: 'block', fontFamily: "'Geist Mono', monospace", fontSize: '12px', color: '#C8F135'}}>{e.ticker}</span>
+<span style={{display: 'block', fontFamily: "'Geist Mono', monospace", fontSize: '12px', color: 'var(--lime-ink)'}}>{e.ticker}</span>
 </span>
 <span className="tr" style={{fontSize: '11px', fontWeight: '600', letterSpacing: '0.04em', padding: '5px 9px', borderRadius: '999px', whiteSpace: 'nowrap', background: e.chipBg, color: e.chipFg, border: `1px solid ${e.chipBorder}`}}>{e.status}</span>
 </span>
-<span style={{display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px 14px', fontSize: '12px', color: '#8E978A', width: '100%'}}>
-<span>Rank<span style={{display: 'block', color: '#E9EDE2', fontSize: '15px'}}>{e.rank}</span></span>
-<span>Score<span style={{display: 'block', color: '#E9EDE2', fontSize: '15px'}}>{e.score}</span></span>
-<span>Market cap<span style={{display: 'block', color: '#E9EDE2', fontSize: '15px'}}>{e.mcap} ETH</span></span>
-<span>Shift timer<span style={{display: 'block', color: '#E9EDE2', fontSize: '15px'}}>{e.timer}</span></span>
+<span style={{display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px 14px', fontSize: '12px', color: 'var(--ink-dimmer)', width: '100%'}}>
+<span>Rank<span style={{display: 'block', color: 'var(--ink)', fontSize: '15px'}}>{e.rank}</span></span>
+<span>Score<span style={{display: 'block', color: 'var(--ink)', fontSize: '15px'}}>{e.score}</span></span>
+<span>Market cap<span style={{display: 'block', color: 'var(--ink)', fontSize: '15px'}}>{e.mcap} ETH</span></span>
+<span>Shift timer<span style={{display: 'block', color: 'var(--ink)', fontSize: '15px'}}>{e.timer}</span></span>
 </span>
-<span style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #263023', paddingTop: '12px', fontSize: '13px', color: '#8E978A', width: '100%'}}>
+<span style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-soft)', paddingTop: '12px', fontSize: '13px', color: 'var(--ink-dimmer)', width: '100%'}}>
 <span>Payroll earned</span>
-<span style={{color: '#E9EDE2', fontWeight: '600'}}>{e.pay} ETH</span>
+<span style={{color: 'var(--ink)', fontWeight: '600'}}>{e.pay} ETH</span>
 </span>
 </button>
 </Fragment>))}
 </div>
 
-<div style={{marginTop: '14px', background: '#171C15', border: '1px solid #2E382A', borderRadius: '18px', padding: '22px 24px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '18px 36px'}}>
+<div style={{marginTop: '14px', background: 'var(--panel)', border: '1px solid var(--border-soft)', borderRadius: '18px', padding: '22px 24px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '18px 36px'}}>
 <div style={{flex: '1 1 260px'}}>
-<div style={{fontSize: '13px', color: '#8E978A'}}>Selected desk</div>
-<div style={{fontSize: '22px', fontWeight: '600'}}>{sel.name} <span style={{fontFamily: "'Geist Mono', monospace", fontSize: '15px', color: '#C8F135'}}>{sel.ticker}</span></div>
-<div style={{color: '#8E978A', fontSize: '14px'}}>{sel.id}, {sel.dept}, {sel.rank}</div>
+<div style={{fontSize: '13px', color: 'var(--ink-dimmer)'}}>Selected desk</div>
+<div style={{fontSize: '22px', fontWeight: '600'}}>{sel.name} <span style={{fontFamily: "'Geist Mono', monospace", fontSize: '15px', color: 'var(--lime-ink)'}}>{sel.ticker}</span></div>
+<div style={{color: 'var(--ink-dimmer)', fontSize: '14px'}}>{sel.id}, {sel.dept}, {sel.rank}</div>
 </div>
 <div style={{display: 'flex', flexWrap: 'wrap', gap: '10px'}}>
-<a href="/office" className="btn-ghost" style={{textDecoration: 'none', color: '#E9EDE2', fontSize: '15px', padding: '0 18px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', border: '1px solid #3A4436', borderRadius: '999px'}}>Open employee profile</a>
+<a href="/office" className="btn-ghost" style={{textDecoration: 'none', color: 'var(--ink)', fontSize: '15px', padding: '0 18px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', border: '1px solid var(--border-soft)', borderRadius: '999px'}}>Open employee profile</a>
 <a href="#office" className="btn-lime" style={{textDecoration: 'none', background: '#C8F135', color: '#0F130E', fontWeight: '600', fontSize: '15px', padding: '0 18px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', borderRadius: '999px'}}>View on Pons ↗</a>
 </div>
 </div>
@@ -418,12 +427,12 @@ Shift active
 <section id="performance" style={{maxWidth: '1240px', margin: '0 auto', padding: 'clamp(96px,11vw,160px) clamp(20px,4vw,48px) 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 460px), 1fr))', gap: '56px'}}>
 <div>
 <h2 style={{margin: '0', fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: 'clamp(48px, 6vw, 84px)', lineHeight: '0.92'}}>Sustained work gets rewarded</h2>
-<p style={{margin: '22px 0 0', color: '#AEB7A8', maxWidth: '46ch'}}>SHIFT scores the whole shift, not the last print. Each metric is normalized, time-weighted, then combined with weights that live in config, not in code.</p>
+<p style={{margin: '22px 0 0', color: 'var(--ink-dim)', maxWidth: '46ch'}}>SHIFT scores the whole shift, not the last print. Each metric is normalized, time-weighted, then combined with weights that live in config, not in code.</p>
 <div style={{marginTop: '40px', display: 'flex', flexDirection: 'column', gap: '18px'}}>
 {weights.map((w, i) => (<Fragment key={i}>
 <div>
-<div style={{display: 'flex', justifyContent: 'space-between', fontSize: '15px', marginBottom: '8px'}}><span>{w.label}</span><span style={{color: '#C8F135', fontWeight: '600'}}>{w.pct}%</span></div>
-<div style={{height: '10px', background: '#1E251C', borderRadius: '5px', overflow: 'hidden'}}>
+<div style={{display: 'flex', justifyContent: 'space-between', fontSize: '15px', marginBottom: '8px'}}><span>{w.label}</span><span style={{color: 'var(--lime-ink)', fontWeight: '600'}}>{w.pct}%</span></div>
+<div style={{height: '10px', background: 'var(--border-soft)', borderRadius: '5px', overflow: 'hidden'}}>
 <div className="wbar" style={{height: '100%', width: `${w.width}%`, background: w.color, borderRadius: '5px'}} />
 </div>
 </div>
@@ -432,27 +441,27 @@ Shift active
 </div>
 
 <div style={{display: 'flex', flexDirection: 'column', gap: '14px'}}>
-<figure style={{margin: '0', background: '#151A13', border: '1px solid #263023', borderRadius: '22px', padding: '24px'}}>
+<figure style={{margin: '0', background: 'var(--card)', border: '1px solid var(--border-soft)', borderRadius: '22px', padding: '24px'}}>
 <svg viewBox="0 0 520 240" width="100%" role="img" aria-label="A steady token rising across the shift scores higher than a token with one short spike">
-<line x1="0" y1="220" x2="520" y2="220" stroke="#283024" strokeWidth="1" />
+<line x1="0" y1="220" x2="520" y2="220" stroke="var(--border-soft)" strokeWidth="1" />
 <line x1="0" y1="174" x2="520" y2="174" stroke="#7E8779" strokeWidth="1.5" strokeDasharray="5 6" />
 <line x1="0" y1="128" x2="520" y2="128" stroke="#C8F135" strokeWidth="1.5" strokeDasharray="5 6" />
 <polyline className="draw" pathLength="1" fill="none" stroke="#7E8779" strokeWidth="2.5" strokeLinejoin="round" points="0,196 60,192 120,195 180,190 230,188 250,34 270,186 330,192 390,194 450,191 520,195" />
 <polyline className="draw" pathLength="1" fill="none" stroke="#C8F135" strokeWidth="3" strokeLinejoin="round" points="0,200 52,184 104,170 156,160 208,146 260,138 312,122 364,112 416,98 468,90 520,82" />
 </svg>
-<figcaption style={{display: 'flex', flexWrap: 'wrap', gap: '8px 24px', fontSize: '14px', color: '#AEB7A8', marginTop: '14px'}}>
+<figcaption style={{display: 'flex', flexWrap: 'wrap', gap: '8px 24px', fontSize: '14px', color: 'var(--ink-dim)', marginTop: '14px'}}>
 <span style={{display: 'inline-flex', alignItems: 'center', gap: '8px'}}><span style={{width: '14px', height: '3px', background: '#C8F135', display: 'inline-block'}} />Steady token, higher time-weighted score</span>
 <span style={{display: 'inline-flex', alignItems: 'center', gap: '8px'}}><span style={{width: '14px', height: '3px', background: '#7E8779', display: 'inline-block'}} />One-block spike, barely moves the average</span>
 </figcaption>
 </figure>
-<div style={{background: '#151A13', border: '1px solid #263023', borderRadius: '22px', padding: '24px'}}>
+<div style={{background: 'var(--card)', border: '1px solid var(--border-soft)', borderRadius: '22px', padding: '24px'}}>
 <div style={{fontWeight: '600'}}>Flagged before it counts</div>
-<p style={{margin: '6px 0 16px', color: '#8E978A', fontSize: '15px'}}>Suspicious shifts are excluded with an audit trail. Nobody edits a final score by hand.</p>
+<p style={{margin: '6px 0 16px', color: 'var(--ink-dimmer)', fontSize: '15px'}}>Suspicious shifts are excluded with an audit trail. Nobody edits a final score by hand.</p>
 <ul style={{listStyle: 'none', margin: '0', padding: '0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '10px 20px', fontSize: '15px'}}>
 {flags.map((f, i) => (<Fragment key={i}>
 <li style={{display: 'flex', gap: '10px', alignItems: 'flex-start'}}>
 <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style={{flex: 'none', marginTop: '4px'}}><path d="M4 4l8 8M12 4l-8 8" stroke="#E0A44A" strokeWidth="2" strokeLinecap="round" /></svg>
-<span style={{color: '#C9D0C2'}}>{f}</span>
+<span style={{color: 'var(--ink-dim)'}}>{f}</span>
 </li>
 </Fragment>))}
 </ul>
@@ -463,7 +472,7 @@ Shift active
 <section id="career" style={{maxWidth: '1240px', margin: '0 auto', padding: 'clamp(96px,11vw,160px) clamp(20px,4vw,48px) 0'}}>
 <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: '24px 64px', alignItems: 'end'}}>
 <h2 style={{margin: '0', fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: 'clamp(48px, 6vw, 84px)', lineHeight: '0.92'}}>Eight titles, eight pay grades</h2>
-<p style={{margin: '0', color: '#AEB7A8', maxWidth: '46ch'}}>Your score sets your title and your title sets your share of payroll. Promotions are public, deterministic and impossible to miss.</p>
+<p style={{margin: '0', color: 'var(--ink-dim)', maxWidth: '46ch'}}>Your score sets your title and your title sets your share of payroll. Promotions are public, deterministic and impossible to miss.</p>
 </div>
 <div style={{marginTop: '56px', overflowX: 'auto', paddingBottom: '8px'}}>
 <div style={{minWidth: '760px', display: 'grid', gridTemplateColumns: 'repeat(8, minmax(0, 1fr))', gap: '10px', alignItems: 'end', height: '360px'}}>
@@ -483,7 +492,7 @@ Shift active
 <section id="payday" style={{maxWidth: '1240px', margin: '0 auto', padding: 'clamp(96px,11vw,160px) clamp(20px,4vw,48px) 0'}}>
 <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: '24px 64px', alignItems: 'end'}}>
 <h2 style={{margin: '0', fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: 'clamp(48px, 6vw, 84px)', lineHeight: '0.92'}}>Payday comes with receipts</h2>
-<p style={{margin: '0', color: '#AEB7A8', maxWidth: '46ch'}}>Revenue for payroll lands in a transparent vault. Each epoch is finalized with a Merkle root, and you claim your share. Your pay is computed from public inputs, never from admin discretion.</p>
+<p style={{margin: '0', color: 'var(--ink-dim)', maxWidth: '46ch'}}>Revenue for payroll lands in a transparent vault. Each epoch is finalized with a Merkle root, and you claim your share. Your pay is computed from public inputs, never from admin discretion.</p>
 </div>
 
 <div style={{marginTop: '56px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: '24px', alignItems: 'start'}}>
@@ -520,9 +529,9 @@ Shift active
 </li>
 </Fragment>))}
 </ol>
-<div style={{background: '#151A13', border: '1px solid #263023', borderRadius: '14px', padding: '18px 20px', fontFamily: "'Geist Mono', monospace", fontSize: '14px', color: '#C9D0C2', lineHeight: '1.8', overflowX: 'auto'}}>
-<div><span style={{color: '#8E978A'}}>employeeShares</span> = performanceWeight × activeTimeWeight</div>
-<div><span style={{color: '#8E978A'}}>employeePayroll</span> = payrollPool × employeeShares / totalEligibleShares</div>
+<div style={{background: 'var(--card)', border: '1px solid var(--border-soft)', borderRadius: '14px', padding: '18px 20px', fontFamily: "'Geist Mono', monospace", fontSize: '14px', color: 'var(--ink-dim)', lineHeight: '1.8', overflowX: 'auto'}}>
+<div><span style={{color: 'var(--ink-dimmer)'}}>employeeShares</span> = performanceWeight × activeTimeWeight</div>
+<div><span style={{color: 'var(--ink-dimmer)'}}>employeePayroll</span> = payrollPool × employeeShares / totalEligibleShares</div>
 </div>
 </div>
 </div>
@@ -531,17 +540,17 @@ Shift active
 <section id="proof" style={{maxWidth: '1240px', margin: '0 auto', padding: 'clamp(96px,11vw,160px) clamp(20px,4vw,48px) 0'}}>
 <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: '24px 64px', alignItems: 'end'}}>
 <h2 style={{margin: '0', fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: 'clamp(48px, 6vw, 84px)', lineHeight: '0.92'}}>Don't trust the screenshot</h2>
-<p style={{margin: '0', color: '#AEB7A8', maxWidth: '46ch'}}>Every important action in SHIFT links to its transaction. Each finalized shift is hashed onchain, with the full snapshot trail kept for anyone to recompute.</p>
+<p style={{margin: '0', color: 'var(--ink-dim)', maxWidth: '46ch'}}>Every important action in SHIFT links to its transaction. Each finalized shift is hashed onchain, with the full snapshot trail kept for anyone to recompute.</p>
 </div>
-<div style={{marginTop: '48px', border: '1px solid #263023', borderRadius: '20px', overflowX: 'auto'}}>
+<div style={{marginTop: '48px', border: '1px solid var(--border-soft)', borderRadius: '20px', overflowX: 'auto'}}>
 <div style={{minWidth: '640px'}}>
 {proofs.map((p, i) => (<Fragment key={i}>
-<div className={p.cls} style={{display: 'grid', gridTemplateColumns: '1.2fr 1fr auto', gap: '16px', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid #1F271D'}}>
-<span style={{display: 'flex', alignItems: 'center', gap: '12px', fontWeight: '500'}}>
-<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="none" stroke="#C8F135" strokeWidth="1.5" /><path d="M5.5 9.2l2.3 2.3 4.7-4.9" fill="none" stroke="#C8F135" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+<div className={p.cls} style={{display: 'grid', gridTemplateColumns: '1.2fr 1fr auto', gap: '16px', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid var(--border)'}}>
+<span style={{display: 'flex', alignItems: 'center', gap: '12px', fontWeight: '500', color: 'var(--lime-ink)'}}>
+<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" /><path d="M5.5 9.2l2.3 2.3 4.7-4.9" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
 {p.event}
 </span>
-<span style={{fontFamily: "'Geist Mono', monospace", fontSize: '13px', color: '#8E978A'}}>{p.contract}</span>
+<span style={{fontFamily: "'Geist Mono', monospace", fontSize: '13px', color: 'var(--ink-dimmer)'}}>{p.contract}</span>
 <span style={{display: 'flex', gap: '18px', fontSize: '14px', whiteSpace: 'nowrap'}}>
 <a href="#proof" aria-label={`View ${p.event} on Robinhood Chain Explorer`}>Robinhood Chain Explorer ↗</a>
 <a href="#proof" aria-label={`View ${p.event} on Pons`}>Pons ↗</a>
@@ -554,18 +563,18 @@ Shift active
 
 <section style={{maxWidth: '1240px', margin: '0 auto', padding: 'clamp(110px,13vw,190px) clamp(20px,4vw,48px) clamp(80px,9vw,120px)'}}>
 <p style={{margin: '0', fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '900', fontSize: 'clamp(56px, 9vw, 136px)', lineHeight: '0.88', color: '#5F685B'}}>Pons launches the markets.</p>
-<p style={{margin: '0', fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '900', fontSize: 'clamp(56px, 9vw, 136px)', lineHeight: '0.88', color: '#E9EDE2'}}>SHIFT runs the company.</p>
+<p style={{margin: '0', fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '900', fontSize: 'clamp(56px, 9vw, 136px)', lineHeight: '0.88', color: 'var(--ink)'}}>SHIFT runs the company.</p>
 <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '16px 28px', marginTop: '48px'}}>
 <a href="/clock-in" className="btn-lime" style={{textDecoration: 'none', background: '#C8F135', color: '#0F130E', fontWeight: '600', fontSize: '17px', padding: '0 30px', minHeight: '56px', display: 'inline-flex', alignItems: 'center', borderRadius: '999px'}}>Clock in</a>
-<span style={{color: '#8E978A'}}>Your next shift starts the moment your token is live.</span>
+<span style={{color: 'var(--ink-dimmer)'}}>Your next shift starts the moment your token is live.</span>
 </div>
 </section>
 
-<footer style={{borderTop: '1px solid #222A20'}}>
-<div style={{maxWidth: '1240px', margin: '0 auto', padding: '32px clamp(20px,4vw,48px) 40px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '20px 40px', fontSize: '14px', color: '#8E978A'}}>
+<footer style={{borderTop: '1px solid var(--border)'}}>
+<div style={{maxWidth: '1240px', margin: '0 auto', padding: '32px clamp(20px,4vw,48px) 40px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '20px 40px', fontSize: '14px', color: 'var(--ink-dimmer)'}}>
 <div style={{display: 'flex', alignItems: 'center', gap: '14px'}}>
-<span style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: '22px', color: '#E9EDE2', letterSpacing: '0.04em'}}>SHIFT</span>
-<span style={{fontFamily: "'Geist Mono', monospace", color: '#C8F135'}}>$SHIFT</span>
+<span style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: '22px', color: 'var(--ink)', letterSpacing: '0.04em'}}>SHIFT</span>
+<span style={{fontFamily: "'Geist Mono', monospace", color: 'var(--lime-ink)'}}>$SHIFT</span>
 </div>
 <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px 28px'}}>
 <span>Network: Robinhood Chain</span>

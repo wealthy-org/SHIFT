@@ -4,6 +4,7 @@
 // same spirit as the rest of this landing section's placeholder numbers. The
 // real, live, data-driven office is the /office route.
 import type { Look } from "@/lib/engine/look";
+import type { Theme } from "@/lib/useTheme";
 import { AvatarMesh } from "./AvatarMesh";
 import { G, LIME, mat } from "./geo";
 import { MiniCanvas } from "./MiniCanvas";
@@ -15,14 +16,20 @@ const LOOKS: Look[] = [
   { shirt: "#5A4E7A", skin: "#E8B894", hair: "#C9A15A", style: 3, acc: 0 },
 ];
 
-export default function OfficeTeaser() {
+const PALETTE = {
+  dark: { bg: "#0F130E", floor: "#171C15", desk: "#232B20" },
+  light: { bg: "#F3F2EC", floor: "#E7E5D8", desk: "#D9D6C7" },
+};
+
+export default function OfficeTeaser({ theme = "dark" }: { theme?: Theme }) {
+  const p = PALETTE[theme];
   const xs = [-1.5, -0.5, 0.5, 1.5];
-  const desk = mat("#232B20");
-  const floor = mat("#171C15", { rough: 0.95 });
-  const monitorBody = mat("#0F130E");
+  const desk = mat(p.desk);
+  const floor = mat(p.floor, { rough: 0.95 });
+  const monitorBody = mat("#23251F");
   const screen = mat(LIME, { emissive: LIME, emissiveIntensity: 1.1 });
   return (
-    <MiniCanvas height={220} camera={[0, 2.15, 3.7]} fov={34} autoRotate autoRotateSpeed={0.9} controls bg="#0F130E">
+    <MiniCanvas height={220} camera={[0, 2.15, 3.7]} fov={34} autoRotate autoRotateSpeed={0.9} controls bg={p.bg}>
       <mesh geometry={G.box} material={floor} position={[0, -0.05, 0]} scale={[5.2, 0.1, 2.4]} receiveShadow />
       {xs.map((x, i) => (
         <group key={i} position={[x, 0, 0]}>

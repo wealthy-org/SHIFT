@@ -2,11 +2,12 @@
 
 import { Edges, Html, OrbitControls, RoundedBox } from "@react-three/drei";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, memo, useContext, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { OfficeEmployee, OfficeScene as Scene } from "@/lib/engine/office3d";
 import { BREAK_SPOTS, CENTER, DOOR, FLOOR, PAYROLL_BOARD, RECEPTION_SPOTS, STATUS_WALL, ZONES, chairPos, deskPos, route } from "./layout";
 import { DISPLAY, MONO, SANS, fit, roundRect, useCanvasTexture } from "./textures";
+import type { Theme } from "@/lib/useTheme";
 
 const LIME = "#C8F135";
 const AMBER = "#E0A44A";
@@ -27,7 +28,19 @@ export type SceneProps = {
   reduced: boolean;
   paused: boolean;
   frozen: boolean;
+  theme?: Theme;
 };
+
+// Room surfaces per theme (same pattern as mini/HeroOffice). Screens, boards,
+// wood, sofa and characters keep one look in both themes.
+const PALETTE = {
+  dark: { bg: "#0F130E", wall: "#1C2318", floor: "#1C2419", grid: "#2C3628", edge: "#3A4436", beam: "#2A3324", label: "#5F685B", shiftLabel: "#2B3B16", meetTable: "#2E3A28", base: "#1A2017", seat: "#1D231B", deskTop: "#3A4535", deskLeg: "#1E241B", deskSel: "#3A4A2C", kbd: "#1A1F18", frame: "#232B20", hemiGround: "#1A2216", ambient: 0.42 },
+  light: { bg: "#F3F2EC", wall: "#E2DFD2", floor: "#E7E5D8", grid: "#CFCCBD", edge: "#B9B6A6", beam: "#CFCBBA", label: "#A3A091", shiftLabel: "#A9C46A", meetTable: "#C9C4B2", base: "#B3AE9C", seat: "#8E8A7C", deskTop: "#D9D6C7", deskLeg: "#8E8A7C", deskSel: "#D3E68C", kbd: "#3A3D36", frame: "#B9B6A6", hemiGround: "#BDB8A6", ambient: 0.62 },
+};
+type Pal = (typeof PALETTE)["dark"];
+const PalCtx = createContext<Pal>(PALETTE.dark);
+const usePal = () => useContext(PalCtx);
+
 
 // ---------------------------------------------------------------------------
 // shared geometry and materials: one instance each, however many desks
@@ -75,7 +88,8 @@ function Box({ p, s, m, cast = true, receive = true, onClick }: { p: [number, nu
 // room shell
 // ---------------------------------------------------------------------------
 
-function FloorLabel({ text, p, size = 0.42, rot = 0, color = "#5F685B", w = 4 }: { text: string; p: [number, number, number]; size?: number; rot?: number; color?: string; w?: number }) {
+function FloorLabel({ text, p, size = 0.42, rot = 0, color: colorProp, w = 4 }: { text: string; p: [number, number, number]; size?: number; rot?: number; color?: string; w?: number }) {
+  const color = colorProp ?? usePal().label;
   const tex = useCanvasTexture(1024, 160, (g, W, H) => {
     g.fillStyle = color;
     g.font = `800 96px ${DISPLAY}`;
@@ -93,6 +107,7 @@ function FloorLabel({ text, p, size = 0.42, rot = 0, color = "#5F685B", w = 4 }:
 }
 
 function FloorGrid() {
+  const pal = usePal();
   const geo = useMemo(() => {
     const pts: number[] = [];
     for (let x = 1; x < FLOOR.w; x += 1) pts.push(x, 0.002, 0, x, 0.002, FLOOR.d);
@@ -103,18 +118,19 @@ function FloorGrid() {
   }, []);
   return (
     <lineSegments geometry={geo}>
-      <lineBasicMaterial color="#2C3628" transparent opacity={0.7} />
+      <lineBasicMaterial color={pal.grid} transparent opacity={0.7} />
     </lineSegments>
   );
 }
 
 function Shell() {
-  const wall = mat("#1C2318", { rough: 0.95 });
+  const pal = usePal();
+  const wall = mat(pal.wall, { rough: 0.95 });
   const trim = mat(LIME, { emissive: LIME, emissiveIntensity: 0.9 });
   return (
     <group>
       {/* floor slab */}
-      <Box p={[FLOOR.w / 2, -0.1, FLOOR.d / 2]} s={[FLOOR.w, 0.2, FLOOR.d]} m={mat("#1C2419", { rough: 0.88 })} cast={false} />
+      <Box p={[FLOOR.w / 2, -0.1, FLOOR.d / 2]} s={[FLOOR.w, 0.2, FLOOR.d]} m={mat(pal.floor, { rough: 0.88 })} cast={false} />
       <FloorGrid />
       {/* two walls, open toward the viewer like the mockup */}
       <Box p={[-0.08, 1.5, FLOOR.d / 2]} s={[0.16, 3.0, FLOOR.d]} m={wall} cast={false} />
@@ -122,17 +138,17 @@ function Shell() {
       {/* lime trim along the floor edges */}
       <Box p={[0.02, 0.012, FLOOR.d / 2]} s={[0.04, 0.024, FLOOR.d]} m={trim} cast={false} receive={false} />
       <Box p={[FLOOR.w / 2, 0.012, 0.02]} s={[FLOOR.w, 0.024, 0.04]} m={trim} cast={false} receive={false} />
-      <Box p={[FLOOR.w / 2, 0.012, FLOOR.d - 0.02]} s={[FLOOR.w, 0.024, 0.04]} m={mat("#3A4436")} cast={false} receive={false} />
-      <Box p={[FLOOR.w - 0.02, 0.012, FLOOR.d / 2]} s={[0.04, 0.024, FLOOR.d]} m={mat("#3A4436")} cast={false} receive={false} />
+      <Box p={[FLOOR.w / 2, 0.012, FLOOR.d - 0.02]} s={[FLOOR.w, 0.024, 0.04]} m={mat(pal.edge)} cast={false} receive={false} />
+      <Box p={[FLOOR.w - 0.02, 0.012, FLOOR.d / 2]} s={[0.04, 0.024, FLOOR.d]} m={mat(pal.edge)} cast={false} receive={false} />
       {/* wall top trim */}
-      <Box p={[-0.08, 3.01, FLOOR.d / 2]} s={[0.18, 0.03, FLOOR.d]} m={mat("#2A3324")} cast={false} />
-      <Box p={[FLOOR.w / 2, 3.01, -0.08]} s={[FLOOR.w, 0.03, 0.18]} m={mat("#2A3324")} cast={false} />
+      <Box p={[-0.08, 3.01, FLOOR.d / 2]} s={[0.18, 0.03, FLOOR.d]} m={mat(pal.beam)} cast={false} />
+      <Box p={[FLOOR.w / 2, 3.01, -0.08]} s={[FLOOR.w, 0.03, 0.18]} m={mat(pal.beam)} cast={false} />
 
       <FloorLabel text="RECEPTION" p={[2.4, 0.01, 8.6]} w={3.2} />
       <FloorLabel text="MEETING" p={[7.0, 0.01, 3.35]} w={2.8} />
       <FloorLabel text="MANAGER OFFICE" p={[15.4, 0.01, 8.75]} w={3.6} />
       <FloorLabel text="BREAK AREA" p={[14.2, 0.01, 13.05]} w={3.2} />
-      <FloorLabel text="SHIFT" p={[2.5, 0.012, 11.7]} w={3.4} size={0.9} color="#2B3B16" rot={0.0} />
+      <FloorLabel text="SHIFT" p={[2.5, 0.012, 11.7]} w={3.4} size={0.9} color={pal.shiftLabel} rot={0.0} />
     </group>
   );
 }
@@ -170,12 +186,13 @@ function MeetingRoom() {
   const z = ZONES.meeting;
   const cx = (z.x0 + z.x1) / 2;
   const cz = (z.z0 + z.z1) / 2 + 0.1;
-  const seat = mat("#1D231B");
+  const pal = usePal();
+  const seat = mat(pal.seat);
   return (
     <group>
       <Glass {...z} />
-      <Box p={[cx, 0.72, cz]} s={[2.8, 0.06, 1.0]} m={mat("#2E3A28")} />
-      <Box p={[cx, 0.36, cz]} s={[0.18, 0.72, 0.5]} m={mat("#1A2017")} />
+      <Box p={[cx, 0.72, cz]} s={[2.8, 0.06, 1.0]} m={mat(pal.meetTable)} />
+      <Box p={[cx, 0.36, cz]} s={[0.18, 0.72, 0.5]} m={mat(pal.base)} />
       {[-1, 0, 1].map((i) => (
         <group key={i}>
           <Box p={[cx + i * 0.9, 0.42, cz - 0.82]} s={[0.42, 0.08, 0.42]} m={seat} />
@@ -204,10 +221,11 @@ function ManagerOffice() {
 
 function Reception() {
   const z = ZONES.reception;
+  const pal = usePal();
   return (
     <group>
-      <Box p={[(z.x0 + z.x1) / 2, 0.5, (z.z0 + z.z1) / 2]} s={[z.x1 - z.x0, 1.0, z.z1 - z.z0]} m={mat("#1A2017")} />
-      <Box p={[(z.x0 + z.x1) / 2, 1.02, (z.z0 + z.z1) / 2]} s={[z.x1 - z.x0 + 0.1, 0.05, z.z1 - z.z0 + 0.12]} m={mat("#2A3324")} />
+      <Box p={[(z.x0 + z.x1) / 2, 0.5, (z.z0 + z.z1) / 2]} s={[z.x1 - z.x0, 1.0, z.z1 - z.z0]} m={mat(pal.base)} />
+      <Box p={[(z.x0 + z.x1) / 2, 1.02, (z.z0 + z.z1) / 2]} s={[z.x1 - z.x0 + 0.1, 0.05, z.z1 - z.z0 + 0.12]} m={mat(pal.beam)} />
       <Box p={[(z.x0 + z.x1) / 2, 0.6, z.z1 + 0.005]} s={[z.x1 - z.x0 - 0.2, 0.04, 0.01]} m={mat(LIME, { emissive: LIME, emissiveIntensity: 1.2 })} cast={false} />
       <Plant p={[0.55, 0, 8.3]} s={1.05} />
       <pointLight position={[2.4, 1.6, 11]} color={LIME} intensity={2.2} distance={5} decay={2} />
@@ -290,6 +308,7 @@ function PayrollBoard({ scene, flashAt }: { scene: Scene; flashAt: number }) {
 }
 
 function StatusWall({ scene }: { scene: Scene }) {
+  const pal = usePal();
   const h = scene.hud;
   const mmss = (x: number) => `${String(Math.floor(x / 60)).padStart(2, "0")}:${String(x % 60).padStart(2, "0")}`;
   const topKey = h.top.map((t) => `${t.id}:${t.score.toFixed(1)}`).join("|");
@@ -343,7 +362,7 @@ function StatusWall({ scene }: { scene: Scene }) {
   const p = STATUS_WALL;
   return (
     <group position={[p.x, p.y, p.z + 0.04]}>
-      <mesh position={[0, 0, -0.03]} geometry={G.box} scale={[p.w + 0.14, p.h + 0.14, 0.05]} material={mat("#232B20")} />
+      <mesh position={[0, 0, -0.03]} geometry={G.box} scale={[p.w + 0.14, p.h + 0.14, 0.05]} material={mat(pal.frame)} />
       <mesh>
         <planeGeometry args={[p.w, p.h]} />
         <meshStandardMaterial map={tex} emissiveMap={tex} emissive="#ffffff" emissiveIntensity={0.55} roughness={0.85} />
@@ -394,8 +413,9 @@ const MonitorScreen = memo(function MonitorScreen({ e }: { e?: OfficeEmployee })
 
 function Desk({ local, occupant, selected, onSelect, flashAt }: { local: number; occupant?: OfficeEmployee; selected: boolean; onSelect: (id: number | null) => void; flashAt: number }) {
   const [x, z] = deskPos(local);
-  const top = mat("#3A4535", { rough: 0.62 });
-  const leg = mat("#1E241B");
+  const pal = usePal();
+  const top = mat(pal.deskTop, { rough: 0.62 });
+  const leg = mat(pal.deskLeg);
   const onClick = (ev: ThreeEvent<MouseEvent>) => {
     ev.stopPropagation();
     if (occupant) onSelect(occupant.id);
@@ -408,7 +428,7 @@ function Desk({ local, occupant, selected, onSelect, flashAt }: { local: number;
   });
   return (
     <group position={[x, 0, z]} onClick={onClick} onPointerOver={(e) => { e.stopPropagation(); if (occupant) document.body.style.cursor = "pointer"; }} onPointerOut={() => (document.body.style.cursor = "")}>
-      <Box p={[0, 0.72, 0]} s={[1.3, 0.05, 0.72]} m={selected ? mat("#3A4A2C", { rough: 0.6 }) : top} />
+      <Box p={[0, 0.72, 0]} s={[1.3, 0.05, 0.72]} m={selected ? mat(pal.deskSel, { rough: 0.6 }) : top} />
       <Box p={[-0.58, 0.36, 0]} s={[0.05, 0.72, 0.62]} m={leg} />
       <Box p={[0.58, 0.36, 0]} s={[0.05, 0.72, 0.62]} m={leg} />
       {/* monitor */}
@@ -420,11 +440,11 @@ function Desk({ local, occupant, selected, onSelect, flashAt }: { local: number;
       </group>
       <pointLight ref={glow} position={[0, 1.05, 0.15]} color={LIME} intensity={0} distance={1.6} decay={2} />
       {/* keyboard */}
-      <Box p={[0, 0.755, 0.12]} s={[0.42, 0.015, 0.14]} m={mat("#1A1F18")} cast={false} />
+      <Box p={[0, 0.755, 0.12]} s={[0.42, 0.015, 0.14]} m={mat(pal.kbd)} cast={false} />
       {/* chair */}
       <group position={[0, 0, 0.78]}>
-        <Box p={[0, 0.44, 0]} s={[0.44, 0.07, 0.42]} m={mat("#1D231B")} />
-        <Box p={[0, 0.74, 0.2]} s={[0.44, 0.52, 0.06]} m={mat("#1D231B")} />
+        <Box p={[0, 0.44, 0]} s={[0.44, 0.07, 0.42]} m={mat(pal.seat)} />
+        <Box p={[0, 0.74, 0.2]} s={[0.44, 0.52, 0.06]} m={mat(pal.seat)} />
         <Box p={[0, 0.22, 0]} s={[0.05, 0.44, 0.05]} m={leg} />
       </group>
     </group>
@@ -793,6 +813,7 @@ function World(props: SceneProps) {
   const firstSeen = useRef<Set<number> | null>(null);
   const controls = useRef<any>(null);
   const per = scene.desksPerFloor;
+  const pal = PALETTE[props.theme ?? "dark"];
 
   // Who belongs on this floor, and where they stand.
   const placed = useMemo(() => {
@@ -816,10 +837,10 @@ function World(props: SceneProps) {
   }, [placed]);
 
   return (
-    <>
-      <color attach="background" args={["#0F130E"]} />
-      <hemisphereLight args={["#FFEBD0", "#1A2216", 1.05]} />
-      <ambientLight intensity={0.42} color="#E9EDE2" />
+    <PalCtx.Provider value={pal}>
+      <color attach="background" args={[pal.bg]} />
+      <hemisphereLight args={["#FFEBD0", pal.hemiGround, 1.05]} />
+      <ambientLight intensity={pal.ambient} color="#E9EDE2" />
       <directionalLight
         position={[CENTER[0] + 9, 17, CENTER[2] + 6]}
         intensity={2.4}
@@ -886,7 +907,7 @@ function World(props: SceneProps) {
         zoomToCursor
       />
       <CameraRig preset={props.preset} selectedId={selectedId} posOut={posOut} zoomCmd={props.zoomCmd} controlsRef={controls} />
-    </>
+    </PalCtx.Provider>
   );
 }
 

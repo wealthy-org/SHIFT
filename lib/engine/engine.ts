@@ -223,6 +223,13 @@ function finalizeShift(s: State, e: Employee, sh: Shift, m: any, now: number) {
     e.currentRank = r.rank;
     e.promotedUntil = now + 25000;
   }
+  // Broadcast to ShiftManager onchain if signer service is available
+  try {
+    const { signerService } = require("../chain/signer");
+    if (signerService.hasSigner()) {
+      signerService.broadcastFinalizeShift(sh.shiftId, r.score, r.rank, sh.resultHash);
+    }
+  } catch {}
   void ev;
   const keep = Object.values(s.shifts).filter((x) => x.snapshots.length);
   if (keep.length > CONFIG.keepSnapshotsForShifts) keep.sort((a, b) => a.startedAt - b.startedAt).slice(0, keep.length - CONFIG.keepSnapshotsForShifts).forEach((x) => (x.snapshots = []));
@@ -270,6 +277,13 @@ function finalizeEpoch(s: State, ep: Epoch, now: number) {
   ep.claimsOpenAt = now + CONFIG.claimDelaySeconds * 1000;
   ep.fundTx = emit(s, "Payroll Funded", "PayrollVault", now, { epochId: ep.epochId, payload: { epochId: ep.epochId, grossRevenue: eth(gross), feeRevenue: eth(ep.feeRevenue), testnetGrant: CONFIG.epochGrantEth } }).tx;
   ep.finalizeTx = emit(s, "Payroll Epoch Finalized", `Epoch ${ep.epochId}`, now, { epochId: ep.epochId, payload: { epochId: ep.epochId, payrollPool: eth(pool), merkleRoot: ep.merkleRoot, employees: ep.leaves.length } }).tx;
+  // Broadcast Merkle root to PayrollDistributor onchain if signer service is active
+  try {
+    const { signerService } = require("../chain/signer");
+    if (signerService.hasSigner()) {
+      signerService.broadcastFinalizeEpoch(ep.epochId, ep.merkleRoot as `0x${string}`, gweiToWei(pool));
+    }
+  } catch {}
 }
 
 export function leafProof(ep: Epoch, employeeId: number) {

@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 
-const card: CSSProperties = { background: "#151A13", border: "1px solid #263023", borderRadius: 20 };
+const card: CSSProperties = { background: "var(--card)", border: "1px solid var(--border-soft)", borderRadius: 20 };
 const pad = "clamp(20px,3vw,36px)";
 
 export const Sk = ({ w = "100%", h = 16, r, style }: { w?: number | string; h?: number; r?: number; style?: CSSProperties }) => (
@@ -15,9 +15,9 @@ const Stat = ({ h = 112 }: { h?: number }) => (
 const grid = (min: number, gap = 12): CSSProperties => ({ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${min}px), 1fr))`, gap });
 const Rows = ({ n, cols }: { n: number; cols: string }) => (
   <div style={{ ...card, overflow: "hidden" }}>
-    <div style={{ display: "grid", gridTemplateColumns: cols, gap: 16, padding: "14px 18px", borderBottom: "1px solid #2E382A" }}>{cols.split(" ").map((_, i) => <Sk key={i} w="55%" h={12} />)}</div>
+    <div style={{ display: "grid", gridTemplateColumns: cols, gap: 16, padding: "14px 18px", borderBottom: "1px solid var(--line)" }}>{cols.split(" ").map((_, i) => <Sk key={i} w="55%" h={12} />)}</div>
     {Array.from({ length: n }, (_, r) => (
-      <div key={r} style={{ display: "grid", gridTemplateColumns: cols, gap: 16, padding: "16px 18px", borderBottom: "1px solid #1F271D", alignItems: "center" }}>{cols.split(" ").map((_, i) => <Sk key={i} w={i === 0 ? "70%" : "50%"} h={14} />)}</div>
+      <div key={r} style={{ display: "grid", gridTemplateColumns: cols, gap: 16, padding: "16px 18px", borderBottom: "1px solid var(--sk-line)", alignItems: "center" }}>{cols.split(" ").map((_, i) => <Sk key={i} w={i === 0 ? "70%" : "50%"} h={14} />)}</div>
     ))}
   </div>
 );
@@ -72,7 +72,7 @@ export const PayrollSkeleton = () => (
   <Main>
     <div style={grid(190)}>{[0, 1, 2, 3].map((i) => <Stat key={i} />)}</div>
     <div style={{ ...grid(420, 16), marginTop: 16, alignItems: "start" }}>
-      <div style={{ background: "#1A2017", border: "1px solid #263023", borderRadius: 16, padding: 32, minHeight: 500 }}>
+      <div style={{ background: "var(--sk-panel)", border: "1px solid var(--border-soft)", borderRadius: 16, padding: 32, minHeight: 500 }}>
         <div style={{ display: "flex", justifyContent: "space-between" }}><Sk w={150} h={40} /><Sk w={140} h={14} /></div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 22, marginTop: 28 }}><div><Sk w="50%" h={12} /><Sk w="70%" h={30} style={{ marginTop: 8 }} /></div><div><Sk w="50%" h={12} /><Sk w="60%" h={30} style={{ marginTop: 8 }} /></div></div>
         <Sk w="55%" h={72} style={{ marginTop: 34 }} />
@@ -91,8 +91,8 @@ export const ProofSkeleton = () => (
     <Sk w="60%" h={16} style={{ marginBottom: 20 }} />
     <div style={{ ...grid(440, 16), alignItems: "start" }}>
       <div style={{ ...card, overflow: "hidden" }}>
-        <div style={{ padding: "16px 18px", borderBottom: "1px solid #2E382A", display: "flex", justifyContent: "space-between" }}><Sk w={130} h={16} /><Sk w={80} h={13} /></div>
-        {Array.from({ length: 9 }, (_, i) => <div key={i} style={{ display: "flex", gap: 14, alignItems: "center", padding: "14px 18px", borderBottom: "1px solid #222A20", minHeight: 62 }}><Sk w={18} h={18} r={9} /><div style={{ flex: 1 }}><Sk w="45%" h={14} /><Sk w="60%" h={11} style={{ marginTop: 8 }} /></div><Sk w={90} h={12} /></div>)}
+        <div style={{ padding: "16px 18px", borderBottom: "1px solid var(--line)", display: "flex", justifyContent: "space-between" }}><Sk w={130} h={16} /><Sk w={80} h={13} /></div>
+        {Array.from({ length: 9 }, (_, i) => <div key={i} style={{ display: "flex", gap: 14, alignItems: "center", padding: "14px 18px", borderBottom: "1px solid var(--border)", minHeight: 62 }}><Sk w={18} h={18} r={9} /><div style={{ flex: 1 }}><Sk w="45%" h={14} /><Sk w="60%" h={11} style={{ marginTop: 8 }} /></div><Sk w={90} h={12} /></div>)}
       </div>
       <div style={{ display: "grid", gap: 16 }}>
         <div style={{ ...card, borderRadius: 22, padding: 24 }}><Sk w="30%" h={12} /><Sk w="55%" h={30} style={{ marginTop: 10 }} /><Sk w="40%" h={13} style={{ marginTop: 10 }} /><Sk h={64} style={{ marginTop: 20 }} /><div style={{ display: "flex", gap: 10, marginTop: 18 }}><Sk w={230} h={44} r={999} /><Sk w={140} h={44} r={999} /></div></div>
@@ -114,7 +114,7 @@ export const TestnetSkeleton = () => (
 );
 
 export const ClockInSkeleton = () => (
-  <section aria-busy="true" aria-label="Loading" style={{ background: "#151A13", border: "1px solid #263023", borderRadius: 26, padding: "clamp(24px,4vw,48px)", maxWidth: 880, margin: "0 auto" }}>
+  <section aria-busy="true" aria-label="Loading" style={{ background: "var(--card)", border: "1px solid var(--border-soft)", borderRadius: 26, padding: "clamp(24px,4vw,48px)", maxWidth: 880, margin: "0 auto" }}>
     <Sk w="55%" h={56} /><Sk w="70%" h={16} style={{ marginTop: 18 }} />
     <div style={{ ...grid(240), marginTop: 28 }}>{[0, 1].map((i) => <Sk key={i} h={72} r={16} />)}</div>
   </section>

@@ -3,6 +3,7 @@ const BOTS = Math.max(0, Math.min(12, Math.floor(Number(process.env.SHIFT_BOTS ?
 // All tunables live here. Rank thresholds, weights and payroll split are
 // placeholders per the brief and must be tuned with testnet simulations.
 export const CONFIG = {
+  dataMode: (process.env.DATA_MODE || "demo") as "live" | "demo",
   speed: Math.max(1, Number(process.env.SHIFT_SPEED || 1)),
 
   shiftSeconds: 300,

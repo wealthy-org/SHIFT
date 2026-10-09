@@ -8,15 +8,16 @@ import { Sk } from "../Skeleton";
 import type { Fx, Preset } from "../office3d/OfficeScene";
 import type { OfficeEmployee, OfficeEvent } from "@/lib/engine/office3d";
 import { useMe } from "@/lib/client";
-import { LIME, ago, mmss, short } from "@/lib/format";
+import { LIME, LIME_INK, ago, mmss, short } from "@/lib/format";
+import { useDocTheme } from "@/lib/useTheme";
 import { useIsCompact, useOfficeStream, usePageVisible, useReducedMotion } from "@/lib/useOffice";
 
 const OfficeCanvas = dynamic(() => import("../office3d/OfficeScene"), { ssr: false, loading: () => null });
 
-const AMBER = "#E0A44A";
+const AMBER = "var(--amber-ink)";
 const DISPLAY = "'Big Shoulders Display', 'Arial Narrow', sans-serif";
 const MONO = "'Geist Mono', monospace";
-const card: CSSProperties = { background: "#151A13", border: "1px solid #263023", borderRadius: 22 };
+const card: CSSProperties = { background: "var(--card)", border: "1px solid var(--border-soft)", borderRadius: 22 };
 const PRESETS: readonly Preset[] = ["Overview", "Follow", "Status wall", "Payroll board"];
 const VIEWS = ["3D office", "List view"] as const;
 
@@ -33,13 +34,13 @@ const REACTS: [string, string][] = [
 ];
 
 const STATUS_STYLE: Record<string, [string, string, string]> = {
-  WORKING: ["rgba(200,241,53,0.12)", LIME, "rgba(200,241,53,0.35)"],
-  "CLOCKED IN": ["transparent", "#C9D0C2", "#4A5446"],
+  WORKING: ["rgba(200,241,53,0.12)", LIME_INK, "rgba(200,241,53,0.35)"],
+  "CLOCKED IN": ["transparent", "var(--ink-soft)", "var(--line-x)"],
   PROMOTED: [LIME, "#0F130E", LIME],
-  "SHIFT COMPLETE": ["#2A3127", "#E9EDE2", "#3A4436"],
+  "SHIFT COMPLETE": ["var(--chip)", "var(--ink)", "var(--line-strong)"],
   PAID: ["#E4E7DA", "#0F130E", "#E4E7DA"],
   LAUNCHING: ["rgba(224,164,74,0.12)", AMBER, "rgba(224,164,74,0.45)"],
-  HIRED: ["transparent", "#AEB7A8", "#3A4436"],
+  HIRED: ["transparent", "var(--ink-dim)", "var(--line-strong)"],
 };
 
 function Chip({ status }: { status: string }) {
@@ -49,8 +50,8 @@ function Chip({ status }: { status: string }) {
 
 function Hud({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div style={{ background: "rgba(18,23,16,.88)", backdropFilter: "blur(6px)", border: "1px solid #2A3227", borderRadius: 12, padding: "8px 12px", minWidth: 0 }}>
-      <div style={{ fontSize: 12, color: "#8E978A", whiteSpace: "nowrap" }}>{label}</div>
+    <div style={{ background: "rgba(var(--inset-rgb),.88)", backdropFilter: "blur(6px)", border: "1px solid var(--chip)", borderRadius: 12, padding: "8px 12px", minWidth: 0 }}>
+      <div style={{ fontSize: 12, color: "var(--ink-dimmer)", whiteSpace: "nowrap" }}>{label}</div>
       <div style={{ fontSize: 18, fontWeight: 600, lineHeight: 1.35, whiteSpace: "nowrap" }}>{children}</div>
     </div>
   );
@@ -58,13 +59,13 @@ function Hud({ label, children }: { label: string; children: ReactNode }) {
 
 function Seg<T extends string>({ items, value, onPick, disabled, label }: { items: readonly T[]; value: T; onPick: (v: T) => void; disabled?: (v: T) => boolean; label: string }) {
   return (
-    <div role="group" aria-label={label} style={{ display: "inline-flex", flexWrap: "wrap", gap: 4, background: "rgba(18,23,16,.9)", border: "1px solid #2A3227", borderRadius: 999, padding: 4 }}>
+    <div role="group" aria-label={label} style={{ display: "inline-flex", flexWrap: "wrap", gap: 4, background: "rgba(var(--inset-rgb),.9)", border: "1px solid var(--chip)", borderRadius: 999, padding: 4 }}>
       {items.map((v) => {
         const on = v === value;
         const off = disabled?.(v);
         return (
           <button key={v} type="button" className="segb" aria-pressed={on} disabled={off} onClick={() => onPick(v)}
-            style={{ border: 0, cursor: off ? "not-allowed" : "pointer", font: "inherit", fontSize: 14, padding: "7px 13px", minHeight: 36, borderRadius: 999, background: on ? "#E9EDE2" : "transparent", color: on ? "#0F130E" : off ? "#5F685B" : "#AEB7A8", fontWeight: on ? 600 : 400 }}>
+            style={{ border: 0, cursor: off ? "not-allowed" : "pointer", font: "inherit", fontSize: 14, padding: "7px 13px", minHeight: 36, borderRadius: 999, background: on ? "var(--ink)" : "transparent", color: on ? "var(--bg)" : off ? "var(--ink-ghost)" : "var(--ink-dim)", fontWeight: on ? 600 : 400 }}>
             {v}
           </button>
         );
@@ -74,9 +75,9 @@ function Seg<T extends string>({ items, value, onPick, disabled, label }: { item
 }
 
 function Banner({ tone, children, action }: { tone: "amber" | "red"; children: ReactNode; action?: ReactNode }) {
-  const c = tone === "amber" ? AMBER : "#E46B5A";
+  const c = tone === "amber" ? AMBER : "var(--red-ink)";
   return (
-    <div role="status" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 14px", background: "rgba(15,19,14,.92)", border: `1px dashed ${c}`, color: c, borderRadius: 12, padding: "10px 14px", fontSize: 14 }}>
+    <div role="status" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 14px", background: "rgba(var(--bg-rgb),.92)", border: `1px dashed ${c}`, color: c, borderRadius: 12, padding: "10px 14px", fontSize: 14 }}>
       <span style={{ flex: "1 1 260px" }}>{children}</span>
       {action}
     </div>
@@ -88,13 +89,13 @@ function Details({ e, onClose, onFollow, following }: { e: OfficeEmployee; onClo
     ["Wallet", <span key="w" style={{ fontFamily: MONO }}>{short(e.wallet)}</span>],
     ["Pons token", e.token ? <span key="t" style={{ fontFamily: MONO }}>{short(e.token)}</span> : "Not launched"],
     ["Rank", e.rank],
-    ["Score", <span key="s" style={{ color: LIME }}>{e.score.toFixed(1)}</span>],
+    ["Score", <span key="s" style={{ color: LIME_INK }}>{e.score.toFixed(1)}</span>],
     ["Shift timer", e.pose === "working" ? `${mmss(e.secs)} · ${mmss(e.left)} left` : e.shiftCode ? "Off shift" : "No shift yet"],
     ["Market cap", `${e.mcap.toFixed(1)} ETH`],
     ["Volume", `${e.volume.toFixed(1)} ETH`],
     ["Holders and traders", String(e.holders)],
-    ["Estimated pay", <span key="ep">{e.estPay.toFixed(3)} ETH <span style={{ color: "#8E978A", fontSize: 12 }}>estimated</span></span>],
-    ["Verified earnings", <span key="ve">{e.earned.toFixed(3)} ETH <span style={{ color: "#8E978A", fontSize: 12 }}>finalized</span></span>],
+    ["Estimated pay", <span key="ep">{e.estPay.toFixed(3)} ETH <span style={{ color: "var(--ink-dimmer)", fontSize: 12 }}>estimated</span></span>],
+    ["Verified earnings", <span key="ve">{e.earned.toFixed(3)} ETH <span style={{ color: "var(--ink-dimmer)", fontSize: 12 }}>finalized</span></span>],
   ];
   return (
     <section aria-label="Employee details" className="vin" style={{ ...card, padding: 22 }}>
@@ -106,25 +107,25 @@ function Details({ e, onClose, onFollow, following }: { e: OfficeEmployee; onClo
         </svg>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 600, fontSize: 19, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.name}</div>
-          <div style={{ fontSize: 13, color: "#8E978A" }}><span style={{ fontFamily: MONO, color: LIME }}>{e.ticker}</span> · {e.code}{e.sim && " · SIM"}</div>
+          <div style={{ fontSize: 13, color: "var(--ink-dimmer)" }}><span style={{ fontFamily: MONO, color: LIME_INK }}>{e.ticker}</span> · {e.code}{e.sim && " · SIM"}</div>
         </div>
-        <button type="button" onClick={onClose} aria-label="Close details" style={{ background: "none", border: "1px solid #3A4436", color: "#AEB7A8", borderRadius: 999, width: 36, height: 36, cursor: "pointer", fontSize: 16, flex: "none" }}>×</button>
+        <button type="button" onClick={onClose} aria-label="Close details" style={{ background: "none", border: "1px solid var(--line-strong)", color: "var(--ink-dim)", borderRadius: 999, width: 36, height: 36, cursor: "pointer", fontSize: 16, flex: "none" }}>×</button>
       </div>
       <div style={{ marginTop: 12 }}><Chip status={e.status} /></div>
       <dl style={{ margin: "16px 0 0", display: "grid", gridTemplateColumns: "auto 1fr", gap: "8px 16px", fontSize: 14 }}>
         {rows.map(([k, v]) => (
           <div key={k} style={{ display: "contents" }}>
-            <dt style={{ color: "#8E978A" }}>{k}</dt>
+            <dt style={{ color: "var(--ink-dimmer)" }}>{k}</dt>
             <dd style={{ margin: 0, textAlign: "right" }}>{v}</dd>
           </div>
         ))}
       </dl>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 18 }}>
         <Link href={`/employee/${e.id}`} className="btnl" style={{ textDecoration: "none", background: LIME, color: "#0F130E", fontWeight: 600, fontSize: 14, padding: "0 16px", minHeight: 42, display: "inline-flex", alignItems: "center", borderRadius: 999 }}>Open profile</Link>
-        <button type="button" className="btng" onClick={onFollow} aria-pressed={following} style={{ background: following ? "#1D251A" : "transparent", color: "#E9EDE2", font: "inherit", fontSize: 14, padding: "0 16px", minHeight: 42, border: `1px solid ${following ? LIME : "#3A4436"}`, borderRadius: 999, cursor: "pointer" }}>{following ? "Following" : "Follow"}</button>
-        <Link href="/proof" className="btng" style={{ textDecoration: "none", color: "#E9EDE2", fontSize: 14, padding: "0 16px", minHeight: 42, display: "inline-flex", alignItems: "center", border: "1px solid #3A4436", borderRadius: 999 }}>Proof ↗</Link>
+        <button type="button" className="btng" onClick={onFollow} aria-pressed={following} style={{ background: following ? "var(--raise)" : "transparent", color: "var(--ink)", font: "inherit", fontSize: 14, padding: "0 16px", minHeight: 42, border: `1px solid ${following ? LIME : "var(--line-strong)"}`, borderRadius: 999, cursor: "pointer" }}>{following ? "Following" : "Follow"}</button>
+        <Link href="/proof" className="btng" style={{ textDecoration: "none", color: "var(--ink)", fontSize: 14, padding: "0 16px", minHeight: 42, display: "inline-flex", alignItems: "center", border: "1px solid var(--line-strong)", borderRadius: 999 }}>Proof ↗</Link>
       </div>
-      <p style={{ margin: "14px 0 0", fontSize: 12, color: "#6E776A" }}>Updated {ago(e.updatedAt, Date.now())}</p>
+      <p style={{ margin: "14px 0 0", fontSize: 12, color: "var(--ink-faint)" }}>Updated {ago(e.updatedAt, Date.now())}</p>
     </section>
   );
 }
@@ -132,19 +133,19 @@ function Details({ e, onClose, onFollow, following }: { e: OfficeEmployee; onClo
 function Feed({ events }: { events: OfficeEvent[] }) {
   return (
     <section aria-label="Recent events" style={{ ...card, overflow: "hidden" }}>
-      <div style={{ padding: "16px 18px", borderBottom: "1px solid #2E382A", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
+      <div style={{ padding: "16px 18px", borderBottom: "1px solid var(--line)", display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
         <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>Recent events</h2>
-        <span style={{ fontSize: 13, color: "#8E978A" }}>By sequence</span>
+        <span style={{ fontSize: 13, color: "var(--ink-dimmer)" }}>By sequence</span>
       </div>
-      {!events.length && <p style={{ margin: 0, padding: 18, color: "#8E978A", fontSize: 14 }}>Nothing yet. Events appear here as they are recorded.</p>}
+      {!events.length && <p style={{ margin: 0, padding: 18, color: "var(--ink-dimmer)", fontSize: 14 }}>Nothing yet. Events appear here as they are recorded.</p>}
       <ol style={{ listStyle: "none", margin: 0, padding: 0, maxHeight: 460, overflowY: "auto" }}>
         {events.map((ev) => {
           const ok = ev.confirmation === "confirmed";
           return (
-            <li key={ev.seq} className={ok ? undefined : "flash"} style={{ padding: "13px 18px", borderBottom: "1px solid #222A20", display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: "4px 12px", alignItems: "center" }}>
-              <span style={{ fontWeight: 600, fontSize: 15 }}>{ev.label}{ev.extra && <span style={{ fontWeight: 400, color: "#AEB7A8" }}> {ev.extra}</span>}</span>
-              <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999, color: ok ? LIME : AMBER, border: `1px ${ok ? "solid" : "dashed"} ${ok ? "rgba(200,241,53,.5)" : AMBER}` }}>{ok ? "Confirmed" : "Pending"}</span>
-              <span style={{ fontSize: 13, color: "#8E978A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>#{ev.seq} {ev.who}, block {ev.block.toLocaleString("en-US")}</span>
+            <li key={ev.seq} className={ok ? undefined : "flash"} style={{ padding: "13px 18px", borderBottom: "1px solid var(--border)", display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: "4px 12px", alignItems: "center" }}>
+              <span style={{ fontWeight: 600, fontSize: 15 }}>{ev.label}{ev.extra && <span style={{ fontWeight: 400, color: "var(--ink-dim)" }}> {ev.extra}</span>}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999, color: ok ? LIME_INK : AMBER, border: `1px ${ok ? "solid" : "dashed"} ${ok ? "rgba(200,241,53,.5)" : AMBER}` }}>{ok ? "Confirmed" : "Pending"}</span>
+              <span style={{ fontSize: 13, color: "var(--ink-dimmer)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>#{ev.seq} {ev.who}, block {ev.block.toLocaleString("en-US")}</span>
               <Link href="/proof" style={{ fontFamily: MONO, fontSize: 12 }}>{short(ev.tx)} ↗</Link>
             </li>
           );
@@ -159,36 +160,37 @@ function Roster({ list, selectedId, onSelect }: { list: OfficeEmployee[]; select
     <section aria-label="Office roster" style={{ ...card, overflowX: "auto" }}>
       <table style={{ width: "100%", minWidth: 760, borderCollapse: "collapse", fontSize: 14 }}>
         <thead>
-          <tr style={{ color: "#8E978A", fontSize: 13, textAlign: "left" }}>
+          <tr style={{ color: "var(--ink-dimmer)", fontSize: 13, textAlign: "left" }}>
             {["Employee", "Status", "Rank", "Score", "Market cap", "Shift", "Earned"].map((h, i) => (
-              <th key={h} scope="col" style={{ padding: "14px 18px", fontWeight: 500, borderBottom: "1px solid #2E382A", textAlign: i > 2 ? "right" : "left" }}>{h}</th>
+              <th key={h} scope="col" style={{ padding: "14px 18px", fontWeight: 500, borderBottom: "1px solid var(--line)", textAlign: i > 2 ? "right" : "left" }}>{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {list.map((e) => (
-            <tr key={e.id} onClick={() => onSelect(e.id)} className="lrow" style={{ cursor: "pointer", background: e.id === selectedId ? "#1A2117" : "transparent" }}>
-              <td style={{ padding: "12px 18px", borderBottom: "1px solid #222A20" }}>
+            <tr key={e.id} onClick={() => onSelect(e.id)} className="lrow" style={{ cursor: "pointer", background: e.id === selectedId ? "var(--raise-2)" : "transparent" }}>
+              <td style={{ padding: "12px 18px", borderBottom: "1px solid var(--border)" }}>
                 <button type="button" onClick={() => onSelect(e.id)} style={{ background: "none", border: 0, padding: 0, color: "inherit", font: "inherit", cursor: "pointer", textAlign: "left" }}>
-                  <span style={{ fontWeight: 600 }}>{e.name}</span> <span style={{ fontFamily: MONO, fontSize: 12, color: LIME }}>{e.ticker}</span>{e.sim && <span style={{ fontSize: 11, color: "#8E978A" }}> SIM</span>}
+                  <span style={{ fontWeight: 600 }}>{e.name}</span> <span style={{ fontFamily: MONO, fontSize: 12, color: LIME_INK }}>{e.ticker}</span>{e.sim && <span style={{ fontSize: 11, color: "var(--ink-dimmer)" }}> SIM</span>}
                 </button>
               </td>
-              <td style={{ padding: "12px 18px", borderBottom: "1px solid #222A20" }}><Chip status={e.status} /></td>
-              <td style={{ padding: "12px 18px", borderBottom: "1px solid #222A20" }}>{e.rank}</td>
-              <td style={{ padding: "12px 18px", borderBottom: "1px solid #222A20", textAlign: "right", color: LIME }}>{e.score.toFixed(1)}</td>
-              <td style={{ padding: "12px 18px", borderBottom: "1px solid #222A20", textAlign: "right" }}>{e.mcap.toFixed(1)} ETH</td>
-              <td style={{ padding: "12px 18px", borderBottom: "1px solid #222A20", textAlign: "right", fontFamily: MONO, fontSize: 13 }}>{e.pose === "working" ? mmss(e.secs) : "—"}</td>
-              <td style={{ padding: "12px 18px", borderBottom: "1px solid #222A20", textAlign: "right" }}>{e.earned.toFixed(3)} ETH</td>
+              <td style={{ padding: "12px 18px", borderBottom: "1px solid var(--border)" }}><Chip status={e.status} /></td>
+              <td style={{ padding: "12px 18px", borderBottom: "1px solid var(--border)" }}>{e.rank}</td>
+              <td style={{ padding: "12px 18px", borderBottom: "1px solid var(--border)", textAlign: "right", color: LIME_INK }}>{e.score.toFixed(1)}</td>
+              <td style={{ padding: "12px 18px", borderBottom: "1px solid var(--border)", textAlign: "right" }}>{e.mcap.toFixed(1)} ETH</td>
+              <td style={{ padding: "12px 18px", borderBottom: "1px solid var(--border)", textAlign: "right", fontFamily: MONO, fontSize: 13 }}>{e.pose === "working" ? mmss(e.secs) : "—"}</td>
+              <td style={{ padding: "12px 18px", borderBottom: "1px solid var(--border)", textAlign: "right" }}>{e.earned.toFixed(3)} ETH</td>
             </tr>
           ))}
         </tbody>
       </table>
-      {!list.length && <p style={{ padding: 18, margin: 0, color: "#8E978A" }}>Nobody has clocked in yet.</p>}
+      {!list.length && <p style={{ padding: 18, margin: 0, color: "var(--ink-dimmer)" }}>Nobody has clocked in yet.</p>}
     </section>
   );
 }
 
 export default function Office3DPage() {
+  const theme = useDocTheme();
   const { scene, link, lastAt, reconnect } = useOfficeStream();
   const { me } = useMe(5000);
   const visible = usePageVisible();
@@ -270,8 +272,8 @@ export default function Office3DPage() {
       <span>Floor {floor + 1} of {floors}, {desksUsed} of {per} desks in use</span>
       {floors > 1 && (
         <span style={{ display: "inline-flex", gap: 4 }}>
-          <button type="button" className="btng" disabled={floor === 0} onClick={() => setFloor((f) => Math.max(0, f - 1))} aria-label="Previous floor" style={{ background: "transparent", color: "#E9EDE2", border: "1px solid #3A4436", borderRadius: 999, width: 32, height: 32, cursor: "pointer" }}>‹</button>
-          <button type="button" className="btng" disabled={floor >= floors - 1} onClick={() => setFloor((f) => Math.min(floors - 1, f + 1))} aria-label="Next floor" style={{ background: "transparent", color: "#E9EDE2", border: "1px solid #3A4436", borderRadius: 999, width: 32, height: 32, cursor: "pointer" }}>›</button>
+          <button type="button" className="btng" disabled={floor === 0} onClick={() => setFloor((f) => Math.max(0, f - 1))} aria-label="Previous floor" style={{ background: "transparent", color: "var(--ink)", border: "1px solid var(--line-strong)", borderRadius: 999, width: 32, height: 32, cursor: "pointer" }}>‹</button>
+          <button type="button" className="btng" disabled={floor >= floors - 1} onClick={() => setFloor((f) => Math.min(floors - 1, f + 1))} aria-label="Next floor" style={{ background: "transparent", color: "var(--ink)", border: "1px solid var(--line-strong)", borderRadius: 999, width: 32, height: 32, cursor: "pointer" }}>›</button>
         </span>
       )}
     </>
@@ -285,7 +287,7 @@ export default function Office3DPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))", gap: 16, alignItems: "start" }} className="o3-grid">
           <div style={{ display: "grid", gap: 16, minWidth: 0 }} className="o3-main">
             {view === "3D office" ? (
-              <section role="region" aria-label="Isometric office" style={{ ...card, position: "relative", overflow: "hidden", height: compact ? "min(70vh, 560px)" : "clamp(520px, 68vh, 820px)", background: "#0F130E" }}>
+              <section role="region" aria-label="Isometric office" style={{ ...card, position: "relative", overflow: "hidden", height: compact ? "min(70vh, 560px)" : "clamp(520px, 68vh, 820px)", background: "var(--bg)" }}>
                 {scene && (
                   <OfficeCanvas
                     scene={scene}
@@ -296,6 +298,7 @@ export default function Office3DPage() {
                     zoomCmd={zoomCmd}
                     fx={fx}
                     boardFlashAt={boardFlashAt}
+                    theme={theme}
                     compact={compact}
                     reduced={reduced}
                     paused={!visible}
@@ -307,15 +310,15 @@ export default function Office3DPage() {
                 {hud && (
                   <div style={{ position: "absolute", left: 14, right: 14, top: 14, display: "flex", flexWrap: "wrap", gap: 8, pointerEvents: "none" }}>
                     <Hud label="Active employees">{hud.active}</Hud>
-                    <Hud label="Next shift ends">{hud.nextShift ? <><span style={{ color: LIME }}>{mmss(hud.nextShift.secs)}</span> <span style={{ fontSize: 13, fontWeight: 500, color: "#AEB7A8" }}>{hud.nextShift.name}</span></> : <span style={{ color: "#6E776A" }}>—</span>}</Hud>
-                    <Hud label="Payroll epoch">{hud.epochId} <span style={{ fontSize: 13, fontWeight: 500, color: "#AEB7A8" }}>estimated · {mmss(hud.epochSecs)}</span></Hud>
+                    <Hud label="Next shift ends">{hud.nextShift ? <><span style={{ color: LIME_INK }}>{mmss(hud.nextShift.secs)}</span> <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-dim)" }}>{hud.nextShift.name}</span></> : <span style={{ color: "var(--ink-faint)" }}>—</span>}</Hud>
+                    <Hud label="Payroll epoch">{hud.epochId} <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-dim)" }}>estimated · {mmss(hud.epochSecs)}</span></Hud>
                     <Hud label="Robinhood Chain">
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 7, color: disconnected ? "#E46B5A" : stale ? AMBER : LIME }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 7, color: disconnected ? "var(--red-ink)" : stale ? AMBER : LIME_INK }}>
                         <span className={disconnected || stale ? undefined : "live"} style={{ width: 8, height: 8, borderRadius: "50%", background: "currentColor", display: "inline-block" }} />
                         {disconnected ? "Disconnected" : stale ? "Delayed" : "Connected"}
                       </span>
                     </Hud>
-                    <Hud label="Last synced block"><span style={{ fontFamily: MONO, fontSize: 16 }}>{hud.head.toLocaleString("en-US")}</span> <span style={{ fontSize: 13, fontWeight: 500, color: "#AEB7A8" }}>{sinceSync <= 2 ? "just now" : `${sinceSync}s ago`}</span></Hud>
+                    <Hud label="Last synced block"><span style={{ fontFamily: MONO, fontSize: 16 }}>{hud.head.toLocaleString("en-US")}</span> <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-dim)" }}>{sinceSync <= 2 ? "just now" : `${sinceSync}s ago`}</span></Hud>
                   </div>
                 )}
 
@@ -325,21 +328,21 @@ export default function Office3DPage() {
                     <div style={{ width: "min(560px, 100%)", display: "grid", gap: 12 }}>
                       <Sk h={260} r={18} />
                       <Sk w="60%" h={14} />
-                      <p style={{ margin: 0, color: "#8E978A", fontSize: 14 }}>Loading the office snapshot, then subscribing to live events.</p>
+                      <p style={{ margin: 0, color: "var(--ink-dimmer)", fontSize: 14 }}>Loading the office snapshot, then subscribing to live events.</p>
                     </div>
                   </div>
                 )}
                 {empty && (
                   <div style={{ position: "absolute", left: "50%", top: "55%", transform: "translate(-50%,-50%)", textAlign: "center", ...card, padding: "22px 26px", width: "min(420px, 90%)" }}>
                     <div style={{ fontSize: 20, fontWeight: 600 }}>The office is empty</div>
-                    <p style={{ margin: "6px 0 16px", color: "#AEB7A8", fontSize: 14 }}>Employees appear at reception as soon as they are hired, and walk to a desk once their Pons launch is confirmed.</p>
+                    <p style={{ margin: "6px 0 16px", color: "var(--ink-dim)", fontSize: 14 }}>Employees appear at reception as soon as they are hired, and walk to a desk once their Pons launch is confirmed.</p>
                     <Link href="/clock-in" className="btnl" style={{ textDecoration: "none", background: LIME, color: "#0F130E", fontWeight: 600, padding: "0 22px", minHeight: 46, display: "inline-flex", alignItems: "center", borderRadius: 999 }}>Be the first to clock in</Link>
                   </div>
                 )}
                 {(disconnected || stale) && (
                   <div style={{ position: "absolute", left: 14, right: 14, top: compact ? 150 : 88 }}>
                     {disconnected ? (
-                      <Banner tone="red" action={<button type="button" onClick={reconnect} className="btng" style={{ background: "transparent", color: "#E9EDE2", border: "1px solid #3A4436", borderRadius: 999, padding: "6px 14px", cursor: "pointer", font: "inherit", fontSize: 13 }}>Retry connection</button>}>
+                      <Banner tone="red" action={<button type="button" onClick={reconnect} className="btng" style={{ background: "transparent", color: "var(--ink)", border: "1px solid var(--line-strong)", borderRadius: 999, padding: "6px 14px", cursor: "pointer", font: "inherit", fontSize: 13 }}>Retry connection</button>}>
                         Connection lost. Showing the last snapshot from block {hud?.head.toLocaleString("en-US")}. Nothing new is animated until the stream is back.
                       </Banner>
                     ) : (
@@ -351,9 +354,9 @@ export default function Office3DPage() {
                 {/* controls */}
                 {scene && (
                   <>
-                    <div style={{ position: "absolute", left: 14, bottom: 14, display: compact ? "none" : "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 14px", background: "rgba(18,23,16,.88)", border: "1px solid #2A3227", borderRadius: 999, padding: "7px 14px", fontSize: 13, color: "#AEB7A8", pointerEvents: "none" }}>
+                    <div style={{ position: "absolute", left: 14, bottom: 14, display: compact ? "none" : "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 14px", background: "rgba(var(--inset-rgb),.88)", border: "1px solid var(--chip)", borderRadius: 999, padding: "7px 14px", fontSize: 13, color: "var(--ink-dim)", pointerEvents: "none" }}>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: LIME }} />Working</span>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#6E776A" }} />Break or done</span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--ink-faint)" }} />Break or done</span>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ width: 9, height: 9, borderRadius: "50%", border: `1.5px dashed ${AMBER}` }} />Pending, not confirmed</span>
                       <span title="Drag to rotate, right-drag to pan, scroll to zoom">Drag to look around</span>
                     </div>
@@ -363,7 +366,7 @@ export default function Office3DPage() {
                     <div style={{ position: "absolute", right: 14, bottom: 14, display: "flex", gap: 8 }}>
                       {(["−", "+"] as const).map((s) => (
                         <button key={s} type="button" aria-label={s === "+" ? "Zoom in" : "Zoom out"} onClick={() => setZoomCmd((z) => ({ n: z.n + 1, factor: s === "+" ? 1.25 : 0.8 }))}
-                          style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid #3A4436", background: "rgba(18,23,16,.9)", color: "#E9EDE2", fontSize: 20, cursor: "pointer" }}>{s}</button>
+                          style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid var(--line-strong)", background: "rgba(var(--inset-rgb),.9)", color: "var(--ink)", fontSize: 20, cursor: "pointer" }}>{s}</button>
                       ))}
                     </div>
                   </>
@@ -376,12 +379,12 @@ export default function Office3DPage() {
             <section aria-label="How the office reacts" style={{ ...card, padding: 22 }}>
               <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: "6px 16px" }}>
                 <h2 style={{ margin: 0, fontSize: 19, fontWeight: 600 }}>How the office reacts</h2>
-                <span style={{ fontSize: 13, color: "#8E978A" }}>Animations show confirmed state. They are never the proof.</span>
+                <span style={{ fontSize: 13, color: "var(--ink-dimmer)" }}>Animations show confirmed state. They are never the proof.</span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "0 24px", marginTop: 12 }}>
                 {REACTS.map(([k, v]) => (
-                  <div key={k} style={{ borderTop: "1px solid #263023", padding: "12px 0" }}>
-                    <div style={{ fontSize: 14, color: "#8E978A" }}>{k}</div>
+                  <div key={k} style={{ borderTop: "1px solid var(--border-soft)", padding: "12px 0" }}>
+                    <div style={{ fontSize: 14, color: "var(--ink-dimmer)" }}>{k}</div>
                     <div style={{ fontSize: 15 }}>{v}</div>
                   </div>
                 ))}
@@ -395,9 +398,9 @@ export default function Office3DPage() {
             ) : (
               <section style={{ ...card, padding: 22, borderStyle: "dashed" }}>
                 <div style={{ fontWeight: 600, fontSize: 17 }}>Pick someone</div>
-                <p style={{ margin: "6px 0 0", color: "#AEB7A8", fontSize: 15 }}>Click a character or a desk to see their wallet, Pons token, shift timer, rank, verified earnings and proof links.</p>
+                <p style={{ margin: "6px 0 0", color: "var(--ink-dim)", fontSize: 15 }}>Click a character or a desk to see their wallet, Pons token, shift timer, rank, verified earnings and proof links.</p>
                 {me && (
-                  <button type="button" onClick={() => setSelectedId(me.id)} className="btng" style={{ marginTop: 14, background: "transparent", color: "#E9EDE2", font: "inherit", fontSize: 14, padding: "0 16px", minHeight: 40, border: "1px solid #3A4436", borderRadius: 999, cursor: "pointer" }}>Find my desk</button>
+                  <button type="button" onClick={() => setSelectedId(me.id)} className="btng" style={{ marginTop: 14, background: "transparent", color: "var(--ink)", font: "inherit", fontSize: 14, padding: "0 16px", minHeight: 40, border: "1px solid var(--line-strong)", borderRadius: 999, cursor: "pointer" }}>Find my desk</button>
                 )}
               </section>
             )}

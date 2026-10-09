@@ -3,6 +3,7 @@
 // geometry proportions as the office's own Desk component, so it reads as the
 // same place, just zoomed in.
 import type { Look } from "@/lib/engine/look";
+import type { Theme } from "@/lib/useTheme";
 import { DISPLAY, MONO, fit, useCanvasTexture } from "../textures";
 import { AvatarMesh } from "./AvatarMesh";
 import { G, LIME, mat } from "./geo";
@@ -43,11 +44,17 @@ function MonitorScreen({ ticker, score, working }: { ticker: string; score: numb
   );
 }
 
-export default function Desk({ look, ticker, score, working }: { look: Look; ticker: string; score: number; working: boolean }) {
-  const top = mat("#3A4535", { rough: 0.62 });
-  const leg = mat("#1E241B");
+const PALETTE = {
+  dark: { bg: "#0F130E", top: "#3A4535", leg: "#1E241B" },
+  light: { bg: "#F3F2EC", top: "#D9D6C7", leg: "#B9B6A7" },
+};
+
+export default function Desk({ look, ticker, score, working, theme = "dark" }: { look: Look; ticker: string; score: number; working: boolean; theme?: Theme }) {
+  const p = PALETTE[theme];
+  const top = mat(p.top, { rough: 0.62 });
+  const leg = mat(p.leg);
   return (
-    <MiniCanvas height={230} camera={[2.2, 1.0, 2.7]} fov={34} bg="#0F130E">
+    <MiniCanvas height={230} camera={[2.2, 1.0, 2.7]} fov={34} bg={p.bg}>
       <group position={[0, -0.6, 0]}>
         <mesh geometry={G.box} material={top} position={[0, 0.72, 0]} scale={[1.3, 0.05, 0.72]} castShadow receiveShadow />
         <mesh geometry={G.box} material={leg} position={[-0.58, 0.36, 0]} scale={[0.05, 0.72, 0.62]} />

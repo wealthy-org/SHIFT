@@ -1,14 +1,95 @@
+/* Theme tokens. :root = light (default). [data-theme="dark"] overrides.
+   Scoped to variables only — app pages (office, payroll, ...) still use their
+   own hardcoded dark colors and are unaffected either way. Only the landing
+   page (components/Shift.tsx) and its 3D snippets read these. */
+:root{
+  --bg:#F3F2EC;
+  --bg-rgb:243,242,236;
+  --card:#FFFFFF;
+  --panel:#FBFAF5;
+  --ink:#161A14;
+  --ink-dim:#5A6156;
+  --ink-dimmer:#7C8277;
+  --border:#E2E0D3;
+  --border-soft:#EBE9DD;
+  --lime:#C8F135;
+  --lime-ink:#4C7A0B;
+  --lime-glow:rgba(76,122,11,.1);
+  /* app pages (AppShell + components/pages) */
+  --inset:#F7F6F0;
+  --inset-rgb:247,246,240;
+  --raise:#E9E8DE;
+  --raise-2:#F0EFE6;
+  --track:#E4E2D6;
+  --bar:#E4E2D6;
+  --line:#D6D4C6;
+  --line-strong:#C6C4B5;
+  --line-x:#B8B6A6;
+  --chip:#ECEBE1;
+  --ink-soft:#3D4339;
+  --ink-faint:#7A8075;
+  --ink-ghost:#A3A89B;
+  --paper-ink:#3D4339;
+  --amber-ink:#94600E;
+  --red-ink:#B23A28;
+  --code-bg:#F7F6F0;
+  --sk-line:#EBE9DD;
+  --sk-panel:#F7F6F0;
+  --sk-a:#ECEBE2;
+  --sk-b:#E2E0D5;
+  --hover:#ECEBE1;
+}
+:root[data-theme='dark']{
+  --bg:#0F130E;
+  --bg-rgb:15,19,14;
+  --card:#151A13;
+  --panel:#1D231B;
+  --ink:#E9EDE2;
+  --ink-dim:#AEB7A8;
+  --ink-dimmer:#8E978A;
+  --border:#222A20;
+  --border-soft:#263023;
+  --lime:#C8F135;
+  --lime-ink:#C8F135;
+  --lime-glow:rgba(200,241,53,.12);
+  /* app pages (AppShell + components/pages) */
+  --inset:#121710;
+  --inset-rgb:18,23,16;
+  --raise:#1D251A;
+  --raise-2:#1A2117;
+  --track:#232B20;
+  --bar:#1E251C;
+  --line:#2E382A;
+  --line-strong:#3A4436;
+  --line-x:#4A5446;
+  --chip:#2A3127;
+  --ink-soft:#C9D0C2;
+  --ink-faint:#6E776A;
+  --ink-ghost:#5F685B;
+  --paper-ink:#E4E7DA;
+  --amber-ink:#E0A44A;
+  --red-ink:#E46B5A;
+  --code-bg:#0B0E0A;
+  --sk-line:#1F271D;
+  --sk-panel:#1A2017;
+  --sk-a:#171C15;
+  --sk-b:#222A1F;
+  --hover:#192017;
+}
+
 body{margin:0;background:#0F130E}
 a{color:#C8F135}a:hover{color:#E2FF7A}
+.sh-landing a{color:var(--lime-ink)}.sh-landing a:hover{color:var(--lime)}
+:root:not([data-theme='dark']) .sh-app a{color:var(--lime-ink)}:root:not([data-theme='dark']) .sh-app a:hover{color:var(--ink)}
 .sh *{box-sizing:border-box}
 .sh ::selection{background:#C8F135;color:#0F130E}
 .sh a:focus-visible,.sh button:focus-visible{outline:2px solid #C8F135;outline-offset:3px}
 .sh .btn-lime{transition:background-color .2s, transform .2s}
 .sh .btn-lime:hover{background:#DBFF5C;color:#0F130E}
 .sh .btn-ghost{transition:border-color .2s}
-.sh .btn-ghost:hover{border-color:#E9EDE2;color:#E9EDE2}
-.sh .navlink{color:#AEB7A8;text-decoration:none}
-.sh .navlink:hover{color:#E9EDE2}
+.sh .btn-ghost:hover{border-color:var(--ink);color:var(--ink)}
+.sh .navlink{color:var(--ink-dim);text-decoration:none}
+.sh .navlink:hover{color:var(--ink)}
 @keyframes rise{from{transform:translateY(108%)}to{transform:translateY(0)}}
 @keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes cardIn{0%{transform:translateY(-180px) rotate(-4deg);opacity:0}55%{opacity:1}100%{transform:translateY(0) rotate(-4deg);opacity:1}}
@@ -79,8 +160,23 @@ a{color:#C8F135}a:hover{color:#E2FF7A}
 .sh .tr{transition:background-color .5s,color .5s,border-color .4s,transform .4s,width .95s linear,height .7s cubic-bezier(.2,.8,.2,1),opacity .4s}
 @keyframes skl{0%{background-position:100% 50%}100%{background-position:0% 50%}}
 .sh .sk{background:linear-gradient(90deg,#171C15 25%,#222A1F 37%,#171C15 63%);background-size:400% 100%;animation:skl 1.5s ease infinite;border-radius:8px}
+.sh .hero-sk{background:linear-gradient(90deg,var(--border-soft) 25%,var(--border) 37%,var(--border-soft) 63%);background-size:400% 100%;animation:skl 1.5s ease infinite;border-radius:8px}
 @media (min-width:900px){.sh .appside{position:sticky;top:0;height:100vh;align-self:flex-start;overflow-y:auto}}
 @media (min-width:1100px){.sh .o3-grid{grid-template-columns:minmax(0,1fr) 380px !important}}
 @keyframes o3pop{0%{transform:translateY(8px) scale(.8);opacity:0}60%{transform:translateY(-2px) scale(1.05);opacity:1}100%{transform:none;opacity:1}}
 .o3-badge{animation:o3pop .45s cubic-bezier(.3,1.4,.5,1) both}
 @media (prefers-reduced-motion: reduce){.o3-badge{animation:none}}
+
+/* App pages (AppShell, ClockInPage): the .sh hover/skeleton rules above are
+   dark-only literals. In light mode only, re-point them at theme tokens; dark
+   keeps the original rules untouched. */
+html{background:var(--bg)}body{background:var(--bg)}
+:root:not([data-theme='dark']) .sh-app .btng:hover{border-color:var(--ink);color:var(--ink)}
+:root:not([data-theme='dark']) .sh-app .wopt:hover{border-color:var(--lime-ink)}
+:root:not([data-theme='dark']) .sh-app .nav:hover{background:var(--hover);color:var(--ink)}
+:root:not([data-theme='dark']) .sh-app .desk:hover{border-color:var(--line-x);color:var(--ink)}
+:root:not([data-theme='dark']) .sh-app .segb:hover,:root:not([data-theme='dark']) .sh-app .tab:hover{color:var(--ink)}
+:root:not([data-theme='dark']) .sh-app .lrow:hover{background:var(--hover);color:var(--ink)}
+:root:not([data-theme='dark']) .sh-app .ev:hover{background:var(--hover)}
+:root:not([data-theme='dark']) .sh-app .sk{background:linear-gradient(90deg,var(--sk-a) 25%,var(--sk-b) 37%,var(--sk-a) 63%);background-size:400% 100%}
+:root:not([data-theme='dark']) .sh-app a:focus-visible,:root:not([data-theme='dark']) .sh-app button:focus-visible{outline-color:var(--lime-ink)}
