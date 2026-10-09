@@ -64,6 +64,7 @@ export interface Flag {
 
 export interface Shift {
   shiftId: number;
+  onchainShiftId?: number;
   code: string;
   employeeId: number;
   tokenAddress: string;
@@ -106,6 +107,9 @@ export interface Employee {
   badge: string;
   tokenAddress?: string;
   ponsMarketAddress?: string;
+  onchainId?: number; // EmployeeRegistry id, set once the register tx confirms
+  chainLinked?: boolean; // token linked in the registry, shifts may open
+  autoStart?: boolean; // open the first shift as soon as the chain link confirms
   joinedAt: number;
   currentRank: number;
   totalShifts: number;
@@ -130,6 +134,7 @@ export interface Leaf {
   wallet: string;
   shares: number;
   amount: number; // gwei
+  chainEmployeeId?: number; // id used in the Merkle leaf (registry id in live mode)
   claimedAt?: number;
   claimTx?: string;
   proof?: Hex[];
@@ -152,6 +157,7 @@ export interface Epoch {
   shiftIds: number[];
   fundTx?: string;
   finalizeTx?: string;
+  chainState?: "NONE" | "SKIPPED" | "PENDING" | "CONFIRMED" | "FAILED";
 }
 
 export interface ChainEvent {
@@ -165,6 +171,7 @@ export interface ChainEvent {
   block: number;
   ts: number;
   tx: string;
+  real?: boolean; // tx is a confirmed hash on Robinhood Chain
   payload?: any;
 }
 
@@ -199,4 +206,25 @@ export interface State {
   treasury: number;
   toggles: { rpcDown: boolean; failNextLaunch: boolean };
   log: { ts: number; msg: string }[];
+  chain?: ChainLedger;
+}
+
+export type JobKind = "register" | "link" | "startShift" | "finalizeShift" | "invalidateShift" | "fundVault" | "finalizeEpoch" | "claim";
+export interface ChainJob {
+  id: number;
+  kind: JobKind;
+  ref: number; // employeeId, shiftId or epochId (local ids)
+  ref2?: number; // claim: local employeeId
+  eventId?: number;
+  status: "queued" | "sent" | "confirmed" | "failed";
+  tx?: string;
+  error?: string;
+  attempts: number;
+  notBefore: number; // wall clock ms
+  createdAt: number;
+  doneAt?: number;
+}
+export interface ChainLedger {
+  jobs: ChainJob[];
+  nextJobId: number;
 }

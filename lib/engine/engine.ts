@@ -1,6 +1,7 @@
 import { CONFIG, RANK_NAMES, rankIndex } from "./config";
 import { holderCount, marketCap, mockPons, rebase, stepMarket } from "./market";
 import { cleanTrades, scoreShift } from "./scoring";
+import { chainOn, chainWanted, enqueue } from "../chain/jobs";
 import type { ChainEvent, Employee, Epoch, Launch, Profile, Shift, Snapshot, State } from "./types";
 import type { Hex } from "./util";
 import { canonical, eth, gwei, gweiToWei, hex, leafHash, merkleProof, merkleRoot, rand, resultHash, seedOf, snapshotsHash, verifyProof } from "./util";
@@ -56,6 +57,13 @@ export function newState(now: number): State {
   return s;
 }
 
+/** Only real wallets are written to the chain. Simulated co-workers stay offchain. */
+export const chainEligible = (e: Employee) => chainOn() && !e.bot && !e.testLabel;
+/** Live mode fails closed: no signer means no new launches or shifts, never a silent simulation. */
+const assertChain = (e: Employee) => {
+  if (chainWanted() && !chainOn() && !e.bot && !e.testLabel) throw new Error("CHAIN_UNAVAILABLE");
+};
+
 // ---------- identity (deterministic, stored permanently) ----------
 export function createEmployee(s: State, wallet: string, ts: number, o: { name?: string; ticker?: string; dept?: string; bot?: boolean; profile?: Profile; testLabel?: string } = {}): Employee {
   const existing = s.byWallet[wallet.toLowerCase()];
@@ -78,7 +86,8 @@ export function createEmployee(s: State, wallet: string, ts: number, o: { name?:
   s.employees[id] = e;
   s.byWallet[e.wallet] = id;
   s.tickers[ticker] = id;
-  emit(s, "Employee Created", e.displayName, ts, { employeeId: id, payload: { employeeId: id, wallet: e.wallet, ticker: e.ticker } });
+  const ce = emit(s, "Employee Created", e.displayName, ts, { employeeId: id, payload: { employeeId: id, wallet: e.wallet, ticker: e.ticker } });
+  if (chainEligible(e)) enqueue(s, "register", id, { eventId: ce.id });
   return e;
 }
 
@@ -89,12 +98,14 @@ function launchNow(s: State, e: Employee, ts: number) {
   e.tokenAddress = m.token;
   e.ponsMarketAddress = m.market;
   e.launchStatus = "LIVE";
-  emit(s, "Token Launched", e.displayName, ts, { employeeId: e.employeeId, payload: { token: m.token, ponsMarket: m.market, ticker: e.ticker } });
+  const le = emit(s, "Token Launched", e.displayName, ts, { employeeId: e.employeeId, payload: { token: m.token, ponsMarket: m.market, ticker: e.ticker } });
+  if (chainEligible(e)) enqueue(s, "link", e.employeeId, { eventId: le.id });
 }
 
 export function startLaunch(s: State, empId: number, now: number): Launch {
   const e = s.employees[empId];
   if (!e) throw new Error("UNKNOWN_EMPLOYEE");
+  assertChain(e);
   if (e.launchStatus === "LIVE") throw new Error("ALREADY_LAUNCHED");
   if (s.launches[empId] && !s.launches[empId].done) return s.launches[empId];
   const l: Launch = { employeeId: empId, startedAt: now, willRevert: s.toggles.failNextLaunch, step: 0, confirmations: 0, done: false, reverted: false };
@@ -117,15 +128,18 @@ function tickLaunches(s: State, now: number) {
     } else if (sec >= 4.2) {
       l.done = true; l.step = 4;
       launchNow(s, e, now);
-      startShift(s, e, now, true);
+      if (chainEligible(e)) e.autoStart = true;
+      else startShift(s, e, now, true);
     }
   }
 }
 
 // ---------- shifts ----------
 export function startShift(s: State, e: Employee, now: number, skipCooldown = false): Shift {
+  assertChain(e);
   if (e.launchStatus !== "LIVE" || !e.tokenAddress) throw new Error("NO_CONFIRMED_LAUNCH");
   if (e.activeShiftId) throw new Error("SHIFT_ALREADY_ACTIVE");
+  if (chainEligible(e) && !e.chainLinked) throw new Error("CHAIN_NOT_READY");
   if (!skipCooldown && e.lastShiftEndedAt && now - e.lastShiftEndedAt < CONFIG.userCooldownSeconds * 1000) throw new Error("COOLDOWN");
   const m = s.markets[e.tokenAddress];
   rebase(m);
@@ -139,7 +153,8 @@ export function startShift(s: State, e: Employee, now: number, skipCooldown = fa
   e.shiftIds.push(id);
   e.activeShiftId = id;
   e.promotedUntil = undefined;
-  emit(s, "Shift Started", e.displayName, now, { employeeId: e.employeeId, shiftId: id, payload: { shiftId: sh.code, startBlock: sh.startBlock } });
+  const se = emit(s, "Shift Started", e.displayName, now, { employeeId: e.employeeId, shiftId: id, payload: { shiftId: sh.code, startBlock: sh.startBlock } });
+  if (chainEligible(e)) enqueue(s, "startShift", id, { eventId: se.id });
   return sh;
 }
 
@@ -187,6 +202,9 @@ function stepShift(s: State, e: Employee, sh: Shift, now: number) {
 
 function finalizeShift(s: State, e: Employee, sh: Shift, m: any, now: number) {
   const r = scoreShift(sh.snapshots, m, CONFIG.shiftSeconds);
+  // The chain stores score x10 as an integer; rank from the rounded score so both sides agree.
+  r.score = Math.round(r.score * 10) / 10;
+  r.rank = rankIndex(r.score);
   sh.averageMarketCap = r.avgMcap; sh.volume = r.volume; sh.rawVolume = r.rawVolume; sh.uniqueTraders = r.uniqueTraders;
   sh.holderCount = r.holders; sh.liquidity = r.liquidity; sh.performanceScore = r.score; sh.components = r.components; sh.flags = r.flags;
   sh.finalizedAt = now;
@@ -204,6 +222,7 @@ function finalizeShift(s: State, e: Employee, sh: Shift, m: any, now: number) {
     sh.invalidReason = reason;
     emit(s, "Shift Invalidated", e.displayName, now, { employeeId: e.employeeId, shiftId: sh.shiftId, payload: { shiftId: sh.code, reason, flags: sh.flags.map((f) => f.code) } });
     logMsg(s, now, `${sh.code} flagged INVALID: ${reason}`);
+    if (chainEligible(e)) enqueue(s, "invalidateShift", sh.shiftId);
     return;
   }
   sh.status = "COMPLETED";
@@ -223,13 +242,7 @@ function finalizeShift(s: State, e: Employee, sh: Shift, m: any, now: number) {
     e.currentRank = r.rank;
     e.promotedUntil = now + 25000;
   }
-  // Broadcast to ShiftManager onchain if signer service is available
-  try {
-    const { signerService } = require("../chain/signer");
-    if (signerService.hasSigner()) {
-      signerService.broadcastFinalizeShift(sh.shiftId, r.score, r.rank, sh.resultHash);
-    }
-  } catch {}
+  if (chainEligible(e)) enqueue(s, "finalizeShift", sh.shiftId, { eventId: ev.id });
   void ev;
   const keep = Object.values(s.shifts).filter((x) => x.snapshots.length);
   if (keep.length > CONFIG.keepSnapshotsForShifts) keep.sort((a, b) => a.startedAt - b.startedAt).slice(0, keep.length - CONFIG.keepSnapshotsForShifts).forEach((x) => (x.snapshots = []));
@@ -247,9 +260,13 @@ export function getEpoch(s: State, id: number): Epoch {
 export const shareOf = (score: number, rank: number) => (score / 100) * CONFIG.rankPayMultiplier[rank] * Math.min(1, CONFIG.shiftSeconds / CONFIG.epochSeconds);
 
 function finalizeEpoch(s: State, ep: Epoch, now: number) {
-  const shifts = Object.values(s.shifts).filter((x) => x.epochId === ep.epochId && x.status === "COMPLETED");
-  const gross = Math.round(ep.feeRevenue) + gwei(CONFIG.epochGrantEth);
-  ep.feeRevenue = Math.round(ep.feeRevenue);
+  const onchain = chainOn();
+  // Live mode pays only registered, real employees. Simulated co-workers and their
+  // mock fees never touch the vault, so the root and the funds always match.
+  const shifts = Object.values(s.shifts).filter((x) => x.epochId === ep.epochId && x.status === "COMPLETED" && (!onchain || s.employees[x.employeeId].onchainId));
+  const empty = onchain && shifts.length === 0;
+  const gross = empty ? 0 : onchain ? gwei(CONFIG.epochGrantEth) : Math.round(ep.feeRevenue) + gwei(CONFIG.epochGrantEth);
+  ep.feeRevenue = onchain ? 0 : Math.round(ep.feeRevenue);
   ep.grossRevenue = gross;
   const pool = Math.floor((gross * CONFIG.payrollPct) / 100) + s.vault.carry;
   ep.carryIn = s.vault.carry;
@@ -261,7 +278,7 @@ function finalizeEpoch(s: State, ep: Epoch, now: number) {
   const ids = Object.keys(by).map(Number).sort((a, b) => a - b);
   const total = ids.reduce((a, i) => a + by[i], 0);
   ep.totalShares = total;
-  ep.leaves = ids.map((id) => ({ employeeId: id, wallet: s.employees[id].wallet, shares: by[id], amount: Math.floor((pool * by[id]) / total) }));
+  ep.leaves = ids.map((id) => ({ employeeId: id, chainEmployeeId: onchain ? s.employees[id].onchainId : undefined, wallet: s.employees[id].wallet, shares: by[id], amount: Math.floor((pool * by[id]) / total) }));
   const distributed = ep.leaves.reduce((a, l) => a + l.amount, 0);
   s.vault.carry = pool - distributed;
   s.vault.funded += gross;
@@ -271,23 +288,29 @@ function finalizeEpoch(s: State, ep: Epoch, now: number) {
   });
   ep.leaves.forEach((l) => (s.employees[l.employeeId].totalPayrollEarned += l.amount));
   ep.shiftIds = shifts.map((x) => x.shiftId);
-  ep.merkleRoot = merkleRoot(ep.leaves.map((l) => leafHash(ep.epochId, l.employeeId, l.wallet, gweiToWei(l.amount))));
+  ep.merkleRoot = ep.leaves.length ? merkleRoot(leafHashes(ep)) : undefined;
   ep.status = "FINALIZED";
   ep.finalizedAt = now;
   ep.claimsOpenAt = now + CONFIG.claimDelaySeconds * 1000;
-  ep.fundTx = emit(s, "Payroll Funded", "PayrollVault", now, { epochId: ep.epochId, payload: { epochId: ep.epochId, grossRevenue: eth(gross), feeRevenue: eth(ep.feeRevenue), testnetGrant: CONFIG.epochGrantEth } }).tx;
-  ep.finalizeTx = emit(s, "Payroll Epoch Finalized", `Epoch ${ep.epochId}`, now, { epochId: ep.epochId, payload: { epochId: ep.epochId, payrollPool: eth(pool), merkleRoot: ep.merkleRoot, employees: ep.leaves.length } }).tx;
-  // Broadcast Merkle root to PayrollDistributor onchain if signer service is active
-  try {
-    const { signerService } = require("../chain/signer");
-    if (signerService.hasSigner()) {
-      signerService.broadcastFinalizeEpoch(ep.epochId, ep.merkleRoot as `0x${string}`, gweiToWei(pool));
+  const fundEv = emit(s, "Payroll Funded", "PayrollVault", now, { epochId: ep.epochId, payload: { epochId: ep.epochId, grossRevenue: eth(gross), feeRevenue: eth(ep.feeRevenue), testnetGrant: CONFIG.epochGrantEth } });
+  ep.fundTx = fundEv.tx;
+  const finEv = emit(s, "Payroll Epoch Finalized", `Epoch ${ep.epochId}`, now, { epochId: ep.epochId, payload: { epochId: ep.epochId, payrollPool: eth(pool), merkleRoot: ep.merkleRoot, employees: ep.leaves.length } });
+  ep.finalizeTx = finEv.tx;
+  if (onchain) {
+    if (!ep.leaves.length) {
+      ep.chainState = "SKIPPED";
+    } else {
+      ep.chainState = "PENDING";
+      enqueue(s, "fundVault", ep.epochId, { eventId: fundEv.id });
+      enqueue(s, "finalizeEpoch", ep.epochId, { eventId: finEv.id });
     }
-  } catch {}
+  }
 }
 
+const leafHashes = (ep: Epoch) => ep.leaves.map((l) => leafHash(ep.epochId, l.chainEmployeeId ?? l.employeeId, l.wallet, gweiToWei(l.amount)));
+
 export function leafProof(ep: Epoch, employeeId: number) {
-  const hashes = ep.leaves.map((l) => leafHash(ep.epochId, l.employeeId, l.wallet, gweiToWei(l.amount)));
+  const hashes = leafHashes(ep);
   const i = ep.leaves.findIndex((l) => l.employeeId === employeeId);
   if (i < 0) return null;
   return { leaf: hashes[i], proof: merkleProof(hashes, i), index: i };
@@ -302,12 +325,26 @@ export function claim(s: State, empId: number, epochId: number, now: number, sup
   const pr = leafProof(ep, empId)!;
   const amount = supplied?.amount ?? leaf.amount;
   const proof = (supplied?.proof as Hex[] | undefined) ?? pr.proof;
-  if (!verifyProof(leafHash(epochId, empId, leaf.wallet, gweiToWei(amount)), proof, ep.merkleRoot as Hex)) throw new Error("INVALID_PROOF");
+  if (!verifyProof(leafHash(epochId, leaf.chainEmployeeId ?? empId, leaf.wallet, gweiToWei(amount)), proof, ep.merkleRoot as Hex)) throw new Error("INVALID_PROOF");
   if (leaf.claimedAt) throw new Error("ALREADY_CLAIMED");
+  return settleClaim(s, empId, epochId, now);
+}
+
+/** Records a claim locally. In live mode `realTx` is the PayrollClaimed hash from the chain. */
+export function settleClaim(s: State, empId: number, epochId: number, now: number, realTx?: string, block?: number) {
+  const ep = s.epochs[epochId];
+  const leaf = ep.leaves.find((l) => l.employeeId === empId)!;
+  if (leaf.claimedAt) return leaf;
   leaf.claimedAt = now;
   const e = s.employees[empId];
-  leaf.claimTx = emit(s, "Payroll Claimed", e.displayName, now, { epochId, employeeId: empId, payload: { epochId, employeeId: empId, wallet: leaf.wallet, amount: eth(amount) } }).tx;
-  s.vault.claimed += amount;
+  const ev = emit(s, "Payroll Claimed", e.displayName, now, { epochId, employeeId: empId, payload: { epochId, employeeId: empId, wallet: leaf.wallet, amount: eth(leaf.amount) } });
+  if (realTx) {
+    ev.tx = realTx;
+    ev.real = true;
+    if (block) ev.block = block;
+  }
+  leaf.claimTx = ev.tx;
+  s.vault.claimed += leaf.amount;
   return leaf;
 }
 
@@ -318,7 +355,10 @@ export function step(s: State, now: number) {
   getEpoch(s, epochOf(s, now));
   for (const e of Object.values(s.employees)) {
     if (e.activeShiftId) stepShift(s, e, s.shifts[e.activeShiftId], now);
-    else if (e.bot && e.launchStatus === "LIVE" && e.nextShiftAt && e.nextShiftAt <= now) {
+    else if (e.autoStart && e.chainLinked) {
+      e.autoStart = false;
+      try { startShift(s, e, now, true); } catch (err) { logMsg(s, now, `Auto-start failed for ${e.code}: ${(err as Error).message}`); }
+    } else if (e.bot && e.launchStatus === "LIVE" && e.nextShiftAt && e.nextShiftAt <= now) {
       e.nextShiftAt = undefined;
       startShift(s, e, now, true);
     }
@@ -331,7 +371,7 @@ export function step(s: State, now: number) {
     if (ep.status !== "FINALIZED" || now < (ep.claimsOpenAt || 0) || now - ep.finalizedAt! > 180000) continue;
     for (const l of ep.leaves) {
       const e = s.employees[l.employeeId];
-      if (l.claimedAt || !(e.bot || e.testLabel)) continue;
+      if (l.claimedAt || !(e.bot || e.testLabel) || chainOn()) continue;
       if (now >= ep.claimsOpenAt! + (5 + ((l.employeeId * 7) % 35)) * 1000) claim(s, l.employeeId, ep.epochId, now);
     }
   }

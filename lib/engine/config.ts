@@ -2,9 +2,12 @@ const BOTS = Math.max(0, Math.min(12, Math.floor(Number(process.env.SHIFT_BOTS ?
 
 // All tunables live here. Rank thresholds, weights and payroll split are
 // placeholders per the brief and must be tuned with testnet simulations.
+const MODE = (process.env.DATA_MODE || "demo") as "live" | "demo";
+
 export const CONFIG = {
-  dataMode: (process.env.DATA_MODE || "demo") as "live" | "demo",
-  speed: Math.max(1, Number(process.env.SHIFT_SPEED || 1)),
+  dataMode: MODE,
+  // Live mode runs against a real chain clock, so time cannot be sped up.
+  speed: MODE === "live" ? 1 : Math.max(1, Number(process.env.SHIFT_SPEED || 1)),
 
   shiftSeconds: 300,
   snapshotSeconds: 20,
@@ -38,7 +41,7 @@ export const CONFIG = {
   treasuryPct: 30,
   // Testnet only: the Pons creator-fee model is unverified, so the vault is
   // also topped up by a faucet grant each epoch.
-  epochGrantEth: 1.5,
+  epochGrantEth: Number(process.env.EPOCH_GRANT_ETH ?? (MODE === "live" ? 0.002 : 1.5)),
   tradeFeeBps: 100,
   creatorFeeSharePct: 50,
 

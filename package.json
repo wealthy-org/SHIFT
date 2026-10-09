@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "shift": "node bin/shift.mjs"
+    "shift": "node bin/shift.mjs",
+    "chain:check": "tsx --env-file=.env.local scripts/chain-check.mts",
+    "abi:check": "node --experimental-strip-types --no-warnings scripts/abi-check.mts",
+    "bridge:sim": "tsx --env-file=.env.local scripts/bridge-sim.mts"
   },
   "bin": {
     "shift": "./bin/shift.mjs"

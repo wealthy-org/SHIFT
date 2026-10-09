@@ -10,7 +10,7 @@
     "ShiftManager": "0x410Fd98Bb78d255d4C0cE0ac2D0CA5e1fD018653",
     "PayrollVault": "0x5E17dDf437F0326c429465883c45E4dBE0bC14d1",
     "PayrollDistributor": "0xa87f8fC594C217aE78F9d1E7Ac361DAB45Fe849E",
-    "PonsAdapter": "0xA932f1f371482166A13EeA21F9d38D8D2BFF2970"
+    "PonsAdapter": "0xa01Ad4eD93Bf5c2dF3A4666Bd4C3Fa2758Df8031"
   },
   "config": {
     "shiftDuration": 300,

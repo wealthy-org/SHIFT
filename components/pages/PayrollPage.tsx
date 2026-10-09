@@ -49,24 +49,7 @@ export default function PayrollPage() {
     if (!me || stage !== 2) return;
     setBusy(true); setErr("");
     try {
-      // 1. Try direct onchain claim via user browser wallet if available
-      const { getBrowserWalletClient, CONTRACT_ADDRESSES, ROBINHOOD_TESTNET } = await import("@/lib/chain/client");
-      const { PAYROLL_DISTRIBUTOR_ABI } = await import("@/lib/chain/abi");
-      const walletClient = getBrowserWalletClient();
-      if (walletClient && f?.proof) {
-        const [account] = await walletClient.getAddresses();
-        if (account) {
-          await walletClient.writeContract({
-            address: CONTRACT_ADDRESSES.payrollDistributor,
-            abi: PAYROLL_DISTRIBUTOR_ABI,
-            functionName: "claim",
-            args: [BigInt(f.epochId), BigInt(me.id), BigInt(Math.floor(f.amount * 1e18)), f.proof.proof],
-            account,
-            chain: ROBINHOOD_TESTNET,
-          });
-        }
-      }
-      // 2. Sync with internal state
+      // The server submits PayrollDistributor.claim with the proof; pay goes to the leaf wallet.
       await post("/api/payroll/claim", { employeeId: me.id, epochId: f.epochId });
       setShown(true);
       setCoinsAt(performance.now());

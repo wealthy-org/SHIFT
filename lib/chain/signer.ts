@@ -1,88 +1,31 @@
-import { createWalletClient, http } from "viem";
+import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { ROBINHOOD_TESTNET, CONTRACT_ADDRESSES } from "./client";
-import { SHIFT_MANAGER_ABI, PAYROLL_DISTRIBUTOR_ABI, EMPLOYEE_REGISTRY_ABI } from "./abi";
+import { ACTIVE_CHAIN } from "./client";
 
+// One key, three roles (FINALIZER, PAYROLL, REGISTRAR). It can score shifts and
+// publish roots but never move vault funds, which is enforced by the contracts.
 export class SignerService {
-  private signerAccount;
-  private walletClient;
+  readonly account;
+  readonly walletClient;
+  readonly publicClient;
 
   constructor() {
+    const rpc = ACTIVE_CHAIN.rpcUrls.default.http[0];
+    this.publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http(rpc) });
     const key = process.env.SIGNER_PRIVATE_KEY as `0x${string}` | undefined;
-    if (key && key.startsWith("0x")) {
-      this.signerAccount = privateKeyToAccount(key);
-      this.walletClient = createWalletClient({
-        account: this.signerAccount,
-        chain: ROBINHOOD_TESTNET,
-        transport: http(ROBINHOOD_TESTNET.rpcUrls.default.http[0]),
-      });
+    if (key && /^0x[0-9a-fA-F]{64}$/.test(key)) {
+      this.account = privateKeyToAccount(key);
+      this.walletClient = createWalletClient({ account: this.account, chain: ACTIVE_CHAIN, transport: http(rpc) });
     }
   }
 
   hasSigner(): boolean {
-    return !!this.signerAccount && !!this.walletClient;
+    return !!this.account && !!this.walletClient;
   }
-
-  async broadcastStartShift(employeeId: number): Promise<`0x${string}` | null> {
-    if (!this.walletClient || !this.signerAccount) return null;
-    try {
-      const hash = await this.walletClient.writeContract({
-        address: CONTRACT_ADDRESSES.shiftManager,
-        abi: SHIFT_MANAGER_ABI,
-        functionName: "startShift",
-        args: [BigInt(employeeId)],
-        account: this.signerAccount,
-      });
-      return hash;
-    } catch (e) {
-      console.error("[SignerService] Failed to start shift onchain:", e);
-      return null;
-    }
-  }
-
-  async broadcastFinalizeShift(
-    shiftId: number,
-    score: number,
-    rank: number,
-    resultHash: `0x${string}`
-  ): Promise<`0x${string}` | null> {
-    if (!this.walletClient || !this.signerAccount) return null;
-    try {
-      const scoreX10 = Math.round(score * 10);
-      const hash = await this.walletClient.writeContract({
-        address: CONTRACT_ADDRESSES.shiftManager,
-        abi: SHIFT_MANAGER_ABI,
-        functionName: "finalizeShift",
-        args: [BigInt(shiftId), scoreX10, rank, resultHash],
-        account: this.signerAccount,
-      });
-      return hash;
-    } catch (e) {
-      console.error("[SignerService] Failed to finalize shift onchain:", e);
-      return null;
-    }
-  }
-
-  async broadcastFinalizeEpoch(
-    epochId: number,
-    merkleRoot: `0x${string}`,
-    poolWei: bigint
-  ): Promise<`0x${string}` | null> {
-    if (!this.walletClient || !this.signerAccount) return null;
-    try {
-      const hash = await this.walletClient.writeContract({
-        address: CONTRACT_ADDRESSES.payrollDistributor,
-        abi: PAYROLL_DISTRIBUTOR_ABI,
-        functionName: "finalizeEpoch",
-        args: [BigInt(epochId), merkleRoot, poolWei],
-        account: this.signerAccount,
-      });
-      return hash;
-    } catch (e) {
-      console.error("[SignerService] Failed to finalize epoch onchain:", e);
-      return null;
-    }
+  get address(): `0x${string}` | undefined {
+    return this.account?.address;
   }
 }
 
-export const signerService = new SignerService();
+const G = globalThis as any;
+export const signerService: SignerService = (G.__shiftSigner ||= new SignerService());

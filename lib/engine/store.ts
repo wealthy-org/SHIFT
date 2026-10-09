@@ -3,6 +3,7 @@ import path from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 import { neon } from "@neondatabase/serverless";
 import { CONFIG } from "./config";
+import { pumpChain } from "../chain/bridge";
 import { advance, newState } from "./engine";
 import type { State } from "./types";
 
@@ -89,6 +90,7 @@ async function boot(): Promise<Holder> {
   const timer = setInterval(() => {
     try {
       advance(h.state, clock(h));
+      pumpChain(h.state);
       if (++n % SAVE_EVERY_SEC === 0) void save(h);
     } catch (err) {
       console.error("[shift engine]", err);

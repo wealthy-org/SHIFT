@@ -1,6 +1,7 @@
 // Read models for the UI. Everything the frontend shows is derived here from
 // engine state; the browser never owns shift or payroll state.
 import { CONFIG, RANK_NAMES } from "./config";
+import { chainOn } from "../chain/jobs";
 import { blockAt, epochOf, getEpoch, leafProof, shareOf } from "./engine";
 import { holderCount, marketCap } from "./market";
 import { scoreShift } from "./scoring";
@@ -180,7 +181,7 @@ export function payrollView(s: State, empId: number, now: number) {
   const hasOpen = !!emp && Object.values(s.shifts).some((x) => x.employeeId === empId && (x.status === "ACTIVE" || x.status === "FINALIZING" || x.status === "PENDING" || (x.status === "COMPLETED" && x.epochId && s.epochs[x.epochId]?.status === "OPEN")));
   if (unclaimed) {
     const l = unclaimed.leaves.find((x) => x.employeeId === empId)!;
-    stage = now >= unclaimed.claimsOpenAt! ? 2 : 1;
+    stage = now >= unclaimed.claimsOpenAt! && (!chainOn() || unclaimed.chainState === "CONFIRMED") ? 2 : 1;
     focus = { epochId: unclaimed.epochId, pool: eth(unclaimed.payrollPool), shares: l.shares / unclaimed.totalShares, amount: eth(l.amount), proof: leafProof(unclaimed, empId), root: unclaimed.merkleRoot, opensIn: Math.max(0, Math.ceil((unclaimed.claimsOpenAt! - now) / 1000)) };
   } else if (!hasOpen && mineFinal.length) {
     const ep = mineFinal[0];
