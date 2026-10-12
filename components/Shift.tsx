@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useLazyComponent } from "./office3d/mini/useLazy";
 import { useTheme } from "@/lib/useTheme";
@@ -201,9 +202,7 @@ export default function Shift() {
 <header style={{position: 'sticky', top: '0', zIndex: '20', background: 'rgba(var(--bg-rgb),0.82)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', borderBottom: '1px solid var(--border)'}}>
 <div style={{maxWidth: '1240px', margin: '0 auto', padding: '14px clamp(20px,4vw,48px)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px 32px'}}>
 <a href="#top" style={{textDecoration: 'none', color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: '10px'}}>
-<span style={{width: '30px', height: '30px', borderRadius: '8px', background: '#C8F135', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="#0F130E" strokeWidth="2" /><path d="M8 4.5V8l2.4 1.6" fill="none" stroke="#0F130E" strokeWidth="2" strokeLinecap="round" /></svg>
-</span>
+<Image src="/logo.png" alt="" width={256} height={256} style={{width: '30px', height: '30px', flex: 'none'}} priority />
 <span style={{fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: '800', fontSize: '26px', letterSpacing: '0.04em'}}>SHIFT</span>
 </a>
 <nav aria-label="Main" style={{display: 'flex', flexWrap: 'wrap', gap: '6px 26px', fontSize: '15px', flex: '1 1 auto'}}>
