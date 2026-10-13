@@ -2,17 +2,17 @@
 
 /**
  * SHIFT Protocol CLI — Production Onchain Workforce Showcase
- * Robinhood Chain Testnet (Chain ID: 46630)
+ * Chain is read from env (NEXT_PUBLIC_CHAIN_ID / NEXT_PUBLIC_CHAIN_NAME).
  *
- * Full interactive, animated onchain showcase in English:
+ * Runs the full employee lifecycle as real, broadcast transactions against
+ * whichever contracts are in contracts/deployments/<chainId>.json:
  *  - Live RPC connection & operator verification
  *  - Clock-in & deterministic employee identity generation
  *  - Pons bonding curve deployment & liquidity launch
- *  - Real-time animated 15/15 snapshot engine with progress bars & live scores
- *  - Onchain ShiftManager finalization & career promotion calculation
- *  - 70% revenue split into PayrollVault with Merkle root commitment
- *  - Employee Merkle proof generation & claim execution
- *  - Provable Blockscout explorer links & verifiable receipts
+ *  - A real shift: startShift, then an actual wait for the onchain-enforced
+ *    duration (no demo speed-up — real chain time), then finalizeShift
+ *  - Vault funding, epoch finalization with a Merkle root, and a real claim
+ *  - Every step prints its Blockscout tx link
  */
 
 import {
@@ -112,7 +112,7 @@ function banner() {
   ╚════██║██╔══██║██║██╔══╝     ██║   
   ███████║██║  ██║██║██║        ██║   
   ╚══════╝╚═╝  ╚═╝╚═╝╚═╝        ╚═╝\x1b[0m
-  \x1b[2mOnchain Workforce Protocol · Robinhood Chain Testnet (E2E Live)\x1b[0m
+  \x1b[2mOnchain Workforce Protocol · ${ROBINHOOD_CHAIN.name || "Robinhood Chain"} (E2E Live)\x1b[0m
 `);
 }
 
@@ -308,8 +308,8 @@ function computeLeafHash(epochId, employeeId, walletAddr, amountWei) {
 async function executeFullLifecycle(targetWallet) {
   banner();
 
-  // STAGE 1: CONNECTING TO ROBINHOOD TESTNET RPC
-  console.log(`\x1b[1m[1/6] CONNECTING TO ROBINHOOD TESTNET RPC\x1b[0m`);
+  // STAGE 1: CONNECTING TO CHAIN RPC
+  console.log(`\x1b[1m[1/6] CONNECTING TO ${(ROBINHOOD_CHAIN.name || "CHAIN").toUpperCase()} RPC\x1b[0m`);
   await spin(`Handshaking with RPC node: \x1b[36m${RPC_URL}\x1b[0m`, 1100);
 
   const blockNumber = await publicClient.getBlockNumber();
@@ -355,7 +355,7 @@ async function executeFullLifecycle(targetWallet) {
   }
 
   await spin("Generating deterministic career identity & badge...", 1000);
-  console.log(`      • Assigned Code    : \x1b[32mEMP-46630\x1b[0m (ID #${employeeId.toString()})`);
+  console.log(`      • Assigned Code    : \x1b[32mEMP-${employeeId.toString().padStart(4, "0")}\x1b[0m (ID #${employeeId.toString()})`);
   console.log(`      • Assigned Role    : \x1b[36mTrading & Quant Strategy\x1b[0m`);
   console.log(`      • Current Status   : \x1b[32mConfirmed & Active onchain\x1b[0m\n`);
 
@@ -371,7 +371,7 @@ async function executeFullLifecycle(targetWallet) {
       functionName: "linkToken",
       args: [employeeId, targetWallet, deployments.contracts.PonsAdapter],
     });
-    console.log(`      • ✔ Link Tx Broadcast: \x1b[34${EXPLORER_URL}/tx/${linkHash}\x1b[0m`);
+    console.log(`      • ✔ Link Tx Broadcast: \x1b[34m${EXPLORER_URL}/tx/${linkHash}\x1b[0m`);
   } catch (err) {
     // Already linked
   }
@@ -380,8 +380,13 @@ async function executeFullLifecycle(targetWallet) {
   console.log(`      • Token Ticker     : \x1b[38;2;200;241;53m$WORK\x1b[0m`);
   console.log(`      • Verified Event   : \x1b[32mTokenLaunched(employeeId: #${employeeId}, token: ${targetWallet.slice(0, 6)}...${targetWallet.slice(-4)})\x1b[0m\n`);
 
-  // STAGE 4: 5-MINUTE SHIFT LIFECYCLE (20S SNAPSHOT ENGINE)
-  console.log(`\x1b[1m[4/6] 5-MINUTE SHIFT LIFECYCLE (20S SNAPSHOT ENGINE)\x1b[0m`);
+  // Config comes from the deployment file so this follows whichever network
+  // it was deployed to, rather than assuming testnet's numbers.
+  const shiftDuration = Number(deployments.config?.shiftDuration ?? 300);
+  const claimDelay = Number(deployments.config?.claimDelay ?? 10);
+
+  // STAGE 4: SHIFT LIFECYCLE
+  console.log(`\x1b[1m[4/6] SHIFT LIFECYCLE (${shiftDuration}s onchain-enforced duration)\x1b[0m`);
   let activeShift = await publicClient.readContract({
     address: deployments.contracts.ShiftManager,
     abi: SHIFT_ABI,
@@ -390,97 +395,114 @@ async function executeFullLifecycle(targetWallet) {
   });
 
   let currentShiftId = activeShift;
+  let startedAt;
   if (currentShiftId === 0n) {
     await spin("Calling ShiftManager.startShift()...", 1200);
-    try {
-      const shiftTxHash = await walletClient.writeContract({
-        address: deployments.contracts.ShiftManager,
-        abi: SHIFT_ABI,
-        functionName: "startShift",
-        args: [employeeId],
-      });
-      console.log(`      • ✔ Start Shift Tx : \x1b[34m${EXPLORER_URL}/tx/${shiftTxHash}\x1b[0m`);
-      currentShiftId = await publicClient.readContract({
-        address: deployments.contracts.ShiftManager,
-        abi: SHIFT_ABI,
-        functionName: "activeShiftOf",
-        args: [employeeId],
-      });
-    } catch (err) {
-      currentShiftId = 2n;
-    }
+    const shiftTxHash = await walletClient.writeContract({
+      address: deployments.contracts.ShiftManager,
+      abi: SHIFT_ABI,
+      functionName: "startShift",
+      args: [employeeId],
+    });
+    console.log(`      • ✔ Start Shift Tx : \x1b[34m${EXPLORER_URL}/tx/${shiftTxHash}\x1b[0m`);
+    currentShiftId = await publicClient.readContract({
+      address: deployments.contracts.ShiftManager,
+      abi: SHIFT_ABI,
+      functionName: "activeShiftOf",
+      args: [employeeId],
+    });
+    startedAt = Math.floor(Date.now() / 1000);
   } else {
-    console.log(`✔ ShiftManager initialized: \x1b[34m${deployments.contracts.ShiftManager}\x1b[0m`);
     console.log(`      • Active Shift ID  : \x1b[33mShift #${currentShiftId.toString()}\x1b[0m`);
+    const shift = await publicClient.readContract({
+      address: deployments.contracts.ShiftManager,
+      abi: SHIFT_ABI,
+      functionName: "getShift",
+      args: [currentShiftId],
+    });
+    startedAt = Number(shift.startedAt);
   }
 
-  // Animated 15/15 Snapshots Simulation Stream
-  const snapshotData = [
-    { n: 1, mcap: "0.62 ETH", vol: "0.15 ETH", score: "42.0" },
-    { n: 2, mcap: "0.68 ETH", vol: "0.22 ETH", score: "46.5" },
-    { n: 3, mcap: "0.74 ETH", vol: "0.34 ETH", score: "51.2" },
-    { n: 4, mcap: "0.80 ETH", vol: "0.45 ETH", score: "56.8" },
-    { n: 5, mcap: "0.85 ETH", vol: "0.58 ETH", score: "61.4" },
-    { n: 6, mcap: "0.91 ETH", vol: "0.72 ETH", score: "65.0" },
-    { n: 7, mcap: "0.98 ETH", vol: "0.89 ETH", score: "68.9" },
-    { n: 8, mcap: "1.05 ETH", vol: "1.04 ETH", score: "72.1" },
-    { n: 9, mcap: "1.12 ETH", vol: "1.23 ETH", score: "75.4" },
-    { n: 10, mcap: "1.20 ETH", vol: "1.45 ETH", score: "78.2" },
-    { n: 11, mcap: "1.26 ETH", vol: "1.62 ETH", score: "81.0" },
-    { n: 12, mcap: "1.31 ETH", vol: "1.78 ETH", score: "83.5" },
-    { n: 13, mcap: "1.36 ETH", vol: "1.92 ETH", score: "85.8" },
-    { n: 14, mcap: "1.40 ETH", vol: "2.04 ETH", score: "87.4" },
-    { n: 15, mcap: "1.42 ETH", vol: "2.10 ETH", score: "88.6" },
-  ];
-
-  for (const s of snapshotData) {
-    const bar = renderProgressBar(s.n, 15, 16);
-    process.stdout.write(`\r\x1b[38;2;200;241;53m⚡\x1b[0m Indexing 20s snapshot [${s.n.toString().padStart(2, "0")}/15] ${bar}  Mcap: ${s.mcap} | Vol: ${s.vol} | Live Score: \x1b[32m${s.score}\x1b[0m`);
-    await sleep(150);
+  // finalizeShift enforces shiftDuration onchain — no way to fast-forward a
+  // real chain's clock, so this actually waits out the remainder live.
+  const remaining = Math.max(0, startedAt + shiftDuration - Math.floor(Date.now() / 1000));
+  if (remaining > 0) {
+    console.log(`      • Waiting for the shift to clear its onchain minimum duration (${remaining}s)...`);
+    const start = Date.now();
+    while (Date.now() - start < remaining * 1000) {
+      const left = Math.max(0, remaining - Math.floor((Date.now() - start) / 1000));
+      process.stdout.write(`\r\x1b[38;2;200;241;53m⏱\x1b[0m ${renderProgressBar(remaining - left, remaining, 24)}  ${left}s remaining  `);
+      await sleep(1000);
+    }
+    process.stdout.write("\n");
   }
-  process.stdout.write("\n");
 
-  await spin("Computing deterministic multi-factor performance score...", 1100);
-  console.log(`      • Final Score      : \x1b[32m88.6 / 100\x1b[0m`);
-  console.log(`      • Career Promotion : \x1b[33mIntern\x1b[0m ➔ \x1b[32mManager (PROMOTED)\x1b[0m`);
-  console.log(`      • Anchored Result  : \x1b[2m0xe0e78fafa77f36a18a70141218bd3889798eec2702c6d0e73311ee09a4b560ef\x1b[0m\n`);
+  const scoreX10 = 500 + Math.floor(Math.random() * 450); // illustrative, not derived from real market data (Pons adapter is unavailable)
+  const resultHash = keccak256(encodePacked(["uint256", "uint16", "address"], [currentShiftId, scoreX10, targetWallet]));
+  await spin("Calling ShiftManager.finalizeShift()...", 1000);
+  const finalizeTxHash = await walletClient.writeContract({
+    address: deployments.contracts.ShiftManager,
+    abi: SHIFT_ABI,
+    functionName: "finalizeShift",
+    args: [currentShiftId, scoreX10, resultHash],
+  });
+  console.log(`      • Final Score      : \x1b[32m${(scoreX10 / 10).toFixed(1)} / 100\x1b[0m`);
+  console.log(`      • Anchored Result  : \x1b[2m${resultHash}\x1b[0m`);
+  console.log(`      • ✔ Finalize Tx    : \x1b[34m${EXPLORER_URL}/tx/${finalizeTxHash}\x1b[0m\n`);
 
   // STAGE 5: PAYROLL EPOCH SETTLEMENT & MERKLE CLAIM
   console.log(`\x1b[1m[5/6] PAYROLL EPOCH SETTLEMENT & MERKLE CLAIM\x1b[0m`);
-  await spin("Funding PayrollVault from 70% trade revenue share...", 1200);
+  await spin("Funding PayrollVault...", 1000);
   console.log(`      • PayrollVault       : \x1b[34m${deployments.contracts.PayrollVault}\x1b[0m`);
 
-  let fundTxHash = "0xc510343dc7ce0d61468c28095ad671b0c3808dbef94b23511bdaf379302c7234";
-  const vaultUnalloc = await publicClient.readContract({
+  const fundAmount = parseEther("0.00003");
+  const fundTxHash = await walletClient.writeContract({
+    address: deployments.contracts.PayrollVault,
+    abi: VAULT_ABI,
+    functionName: "fund",
+    args: ["cli-showcase"],
+    value: fundAmount,
+  });
+  console.log(`      • ✔ Revenue Inflow Tx : \x1b[34m${EXPLORER_URL}/tx/${fundTxHash}\x1b[0m`);
+
+  // Single-employee epoch: the merkle root is just this one leaf, so the
+  // claim proof is empty.
+  const epochId = BigInt(Math.floor(Date.now() / 1000));
+  const pool = await publicClient.readContract({
     address: deployments.contracts.PayrollVault,
     abi: VAULT_ABI,
     functionName: "unallocated",
   });
+  const leaf = computeLeafHash(epochId, employeeId, targetWallet, pool);
 
-  if (vaultUnalloc === 0n) {
-    try {
-      const fundTx = await walletClient.writeContract({
-        address: deployments.contracts.PayrollVault,
-        abi: VAULT_ABI,
-        functionName: "fund",
-        args: ["70%-revenue-share"],
-        value: parseEther("0.00003"),
-      });
-      fundTxHash = fundTx;
-    } catch (e) {}
+  await spin("Calling PayrollDistributor.finalizeEpoch()...", 1000);
+  const epochTxHash = await walletClient.writeContract({
+    address: deployments.contracts.PayrollDistributor,
+    abi: DISTRIBUTOR_ABI,
+    functionName: "finalizeEpoch",
+    args: [epochId, leaf, pool],
+  });
+  console.log(`      • Epoch ID           : \x1b[33m#${epochId.toString()}\x1b[0m`);
+  console.log(`      • Merkle Root        : \x1b[36m${leaf}\x1b[0m`);
+  console.log(`      • ✔ Epoch Commit Tx  : \x1b[34m${EXPLORER_URL}/tx/${epochTxHash}\x1b[0m`);
+
+  if (claimDelay > 0) {
+    console.log(`      • Waiting for claims to open (${claimDelay}s claim delay)...`);
+    await sleep(claimDelay * 1000);
   }
-  console.log(`      • ✔ Revenue Inflow Tx : \x1b[34m${EXPLORER_URL}/tx/${fundTxHash}\x1b[0m`);
 
-  await spin("Computing cryptographic Merkle distribution tree...", 1200);
-  console.log(`      • PayrollDistributor : \x1b[34m${deployments.contracts.PayrollDistributor}\x1b[0m`);
-  console.log(`      • Merkle Root Tree   : \x1b[36m0xf8640e4599a7f8b395d2d9721b5da4f76312b20cb2cc3a8497df1229bf215159\x1b[0m`);
-  console.log(`      • ✔ Epoch Commit Tx  : \x1b[34m${EXPLORER_URL}/tx/0xfc600ba0068e56dd660c53a14d03d5c6e179dedb139128dd1ea65e8b95e90de8\x1b[0m`);
-  console.log(`      • Epoch Status       : \x1b[32mFinalized & Settled\x1b[0m`);
-  console.log(`      • Claimed Payout     : \x1b[32m0.000035 ETH (Paid to Employee)\x1b[0m`);
-  console.log(`      • ✔ Payroll Claim Tx : \x1b[34m${EXPLORER_URL}/tx/0x75760ee7f098fe64b6dcdd50911d1af2e8b25a99379d320e92113c509150d1b9\x1b[0m\n`);
+  await spin("Calling PayrollDistributor.claim()...", 1000);
+  const claimTxHash = await walletClient.writeContract({
+    address: deployments.contracts.PayrollDistributor,
+    abi: DISTRIBUTOR_ABI,
+    functionName: "claim",
+    args: [epochId, employeeId, targetWallet, pool, []],
+  });
+  console.log(`      • Claimed Payout     : \x1b[32m${formatEther(pool)} ETH (Paid to Employee)\x1b[0m`);
+  console.log(`      • ✔ Payroll Claim Tx : \x1b[34m${EXPLORER_URL}/tx/${claimTxHash}\x1b[0m\n`);
 
-  // STAGE 6: VERIFIABLE EXPLORER PROOFS (LIVE ROBINHOOD TESTNET)
-  console.log(`\x1b[1m[6/6] VERIFIABLE EXPLORER PROOFS (LIVE ROBINHOOD TESTNET)\x1b[0m`);
+  // STAGE 6: VERIFIABLE EXPLORER PROOFS
+  console.log(`\x1b[1m[6/6] VERIFIABLE EXPLORER PROOFS\x1b[0m`);
   console.log(`  \x1b[32m✔ LIFECYCLE EXECUTION COMPLETE!\x1b[0m`);
   console.log(`  All actions above are directly verifiable onchain via Blockscout:\n`);
 
@@ -488,11 +510,11 @@ async function executeFullLifecycle(targetWallet) {
   console.log(`     \x1b[36m${RPC_URL}\x1b[0m\n`);
 
   console.log(`  💸 \x1b[1mPayroll Onchain Proof Transactions:\x1b[0m`);
-  console.log(`     • Vault Funding Tx     : \x1b[34m${EXPLORER_URL}/tx/${fundTxHash}\x1b[0m`);
-  console.log(`     • Epoch 2 Merkle Root  : \x1b[34m${EXPLORER_URL}/tx/0xfc600ba0068e56dd660c53a14d03d5c6e179dedb139128dd1ea65e8b95e90de8\x1b[0m`);
-  console.log(`     • Employee 2 Claim Tx  : \x1b[34m${EXPLORER_URL}/tx/0x75760ee7f098fe64b6dcdd50911d1af2e8b25a99379d320e92113c509150d1b9\x1b[0m\n`);
+  console.log(`     • Vault Funding Tx   : \x1b[34m${EXPLORER_URL}/tx/${fundTxHash}\x1b[0m`);
+  console.log(`     • Epoch Merkle Root  : \x1b[34m${EXPLORER_URL}/tx/${epochTxHash}\x1b[0m`);
+  console.log(`     • Payroll Claim Tx   : \x1b[34m${EXPLORER_URL}/tx/${claimTxHash}\x1b[0m\n`);
 
-  console.log(`  🔍 \x1b[1mRobinhood Explorer — Blockscout Live Contract Links:\x1b[0m`);
+  console.log(`  🔍 \x1b[1mBlockscout Live Contract Links:\x1b[0m`);
   console.log(`     • User Wallet Address  : \x1b[34m${EXPLORER_URL}/address/${targetWallet}\x1b[0m`);
   console.log(`     • EmployeeRegistry     : \x1b[34m${EXPLORER_URL}/address/${deployments.contracts.EmployeeRegistry}\x1b[0m`);
   console.log(`     • ShiftManager          : \x1b[34m${EXPLORER_URL}/address/${deployments.contracts.ShiftManager}\x1b[0m`);
