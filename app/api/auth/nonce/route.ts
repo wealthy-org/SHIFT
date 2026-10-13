@@ -9,7 +9,12 @@ export async function GET(req: Request) {
   const token = issueNonce();
   const nonce = nonceValue(token)!;
   const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID || 0);
-  const origin = new URL(req.url).origin;
+  // Behind a reverse proxy (Railway, etc.) req.url's host can be the internal
+  // one. Prefer what the proxy says the public request actually arrived as,
+  // so the signed message's domain matches what the browser/wallet see.
+  const forwardedHost = req.headers.get("x-forwarded-host");
+  const forwardedProto = req.headers.get("x-forwarded-proto") || "https";
+  const origin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : new URL(req.url).origin;
   const message = loginMessage(address, nonce, origin, chainId, new Date().toISOString());
   return NextResponse.json(
     { nonce, message },
