@@ -345,13 +345,15 @@ async function executeFullLifecycle(targetWallet) {
       args: [targetWallet, metadataHash, uri],
     });
     console.log(`      • ✔ Broadcast Success : \x1b[34m${EXPLORER_URL}/tx/${txHash}\x1b[0m`);
-    await spin("Awaiting block confirmation on Robinhood Chain...", 1500);
+    await spin("Awaiting block confirmation on Robinhood Chain...", 800);
+    await publicClient.waitForTransactionReceipt({ hash: txHash });
     employeeId = await publicClient.readContract({
       address: deployments.contracts.EmployeeRegistry,
       abi: REGISTRY_ABI,
       functionName: "employeeIdOf",
       args: [targetWallet],
     });
+    if (employeeId === 0n) throw new Error("createEmployee confirmed but employeeIdOf still reads 0 — check the registry wiring.");
   }
 
   await spin("Generating deterministic career identity & badge...", 1000);
@@ -405,12 +407,15 @@ async function executeFullLifecycle(targetWallet) {
       args: [employeeId],
     });
     console.log(`      • ✔ Start Shift Tx : \x1b[34m${EXPLORER_URL}/tx/${shiftTxHash}\x1b[0m`);
+    await spin("Waiting for Start Shift confirmation...", 800);
+    await publicClient.waitForTransactionReceipt({ hash: shiftTxHash });
     currentShiftId = await publicClient.readContract({
       address: deployments.contracts.ShiftManager,
       abi: SHIFT_ABI,
       functionName: "activeShiftOf",
       args: [employeeId],
     });
+    if (currentShiftId === 0n) throw new Error("startShift confirmed but activeShiftOf still reads 0 — check the registry/ShiftManager wiring.");
     startedAt = Math.floor(Date.now() / 1000);
   } else {
     console.log(`      • Active Shift ID  : \x1b[33mShift #${currentShiftId.toString()}\x1b[0m`);
@@ -464,6 +469,7 @@ async function executeFullLifecycle(targetWallet) {
     value: fundAmount,
   });
   console.log(`      • ✔ Revenue Inflow Tx : \x1b[34m${EXPLORER_URL}/tx/${fundTxHash}\x1b[0m`);
+  await publicClient.waitForTransactionReceipt({ hash: fundTxHash });
 
   // Single-employee epoch: the merkle root is just this one leaf, so the
   // claim proof is empty.
@@ -473,6 +479,7 @@ async function executeFullLifecycle(targetWallet) {
     abi: VAULT_ABI,
     functionName: "unallocated",
   });
+  if (pool === 0n) throw new Error("PayrollVault.fund confirmed but unallocated() still reads 0 — check the vault wiring.");
   const leaf = computeLeafHash(epochId, employeeId, targetWallet, pool);
 
   await spin("Calling PayrollDistributor.finalizeEpoch()...", 1000);
@@ -485,6 +492,7 @@ async function executeFullLifecycle(targetWallet) {
   console.log(`      • Epoch ID           : \x1b[33m#${epochId.toString()}\x1b[0m`);
   console.log(`      • Merkle Root        : \x1b[36m${leaf}\x1b[0m`);
   console.log(`      • ✔ Epoch Commit Tx  : \x1b[34m${EXPLORER_URL}/tx/${epochTxHash}\x1b[0m`);
+  await publicClient.waitForTransactionReceipt({ hash: epochTxHash });
 
   if (claimDelay > 0) {
     console.log(`      • Waiting for claims to open (${claimDelay}s claim delay)...`);
