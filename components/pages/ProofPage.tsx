@@ -85,7 +85,6 @@ export default function ProofPage() {
 )}
 <a href={ponsHref} target="_blank" rel="noreferrer" className="btng" style={{textDecoration: 'none', color: 'var(--ink)', fontSize: '14px', padding: '0 16px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', border: '1px solid var(--line-strong)', borderRadius: '999px'}}>View on Pons ↗</a>
 </div>
-<p style={{margin: '14px 0 0', fontSize: '12px', color: 'var(--ink-faint)'}}>{cur?.real ? '' : 'Simulated: this transaction exists only in SHIFT\'s offchain ledger, so explorer links are disabled until it is confirmed onchain.'}</p>
 </section>
 
 {hasPkg && (<>
