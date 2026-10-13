@@ -83,7 +83,7 @@ export default function ProofPage() {
 <a href={explorerHref} target="_blank" rel="noreferrer" className="btnl" style={{textDecoration: 'none', background: '#C8F135', color: '#0F130E', fontWeight: '600', fontSize: '14px', padding: '0 16px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', borderRadius: '999px'}}>View on Robinhood Chain Explorer ↗</a>
 <a href={ponsHref} target="_blank" rel="noreferrer" className="btng" style={{textDecoration: 'none', color: 'var(--ink)', fontSize: '14px', padding: '0 16px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', border: '1px solid var(--line-strong)', borderRadius: '999px'}}>View on Pons ↗</a>
 </div>
-<p style={{margin: '14px 0 0', fontSize: '12px', color: 'var(--ink-faint)'}}>{EXPLORER ? '' : 'Simulated testnet: this transaction exists only in the SHIFT testnet ledger, so explorer links are disabled until a real explorer URL is configured.'}</p>
+<p style={{margin: '14px 0 0', fontSize: '12px', color: 'var(--ink-faint)'}}>{EXPLORER ? '' : 'Simulated: this transaction exists only in SHIFT\'s offchain ledger, so explorer links are disabled until a real explorer URL is configured.'}</p>
 </section>
 
 {hasPkg && (<>

@@ -11,7 +11,9 @@ via_ir = false
 fs_permissions = [{ access = "read-write", path = "./deployments" }]
 
 [rpc_endpoints]
-robinhood_testnet = "${NEXT_PUBLIC_RPC_URL}"
+robinhood_testnet = "https://rpc.testnet.chain.robinhood.com"
+mainnet = "https://rpc.mainnet.chain.robinhood.com"
 
 [etherscan]
 robinhood_testnet = { key = "", url = "https://explorer.testnet.chain.robinhood.com/api", chain = 46630 }
+mainnet = { key = "${MAINNET_EXPLORER_API_KEY}", url = "https://robinhoodchain.blockscout.com/api", chain = 4663 }

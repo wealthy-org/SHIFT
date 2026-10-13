@@ -95,7 +95,7 @@ function OnTheClock({ emp, me, deskHref, reset, secsToEpoch }: any) {
           <Link href="/office" className="btng" style={{ textDecoration: "none", color: "var(--ink)", fontSize: 16, padding: "0 22px", minHeight: 52, display: "inline-flex", alignItems: "center", border: "1px solid var(--line-strong)", borderRadius: 999 }}>See the office</Link>
           {done && <Link href="/payroll" className="btng" style={{ textDecoration: "none", color: "var(--ink)", fontSize: 16, padding: "0 22px", minHeight: 52, display: "inline-flex", alignItems: "center", border: "1px solid var(--line-strong)", borderRadius: 999 }}>Go to payday</Link>}
         </div>
-        <button type="button" onClick={reset} style={{ marginTop: 18, background: "none", border: 0, padding: 0, color: "var(--ink-dimmer)", font: "inherit", fontSize: 13, textDecoration: "underline", cursor: "pointer", minHeight: 44 }}>Disconnect testnet wallet</button>
+        <button type="button" onClick={reset} style={{ marginTop: 18, background: "none", border: 0, padding: 0, color: "var(--ink-dimmer)", font: "inherit", fontSize: 13, textDecoration: "underline", cursor: "pointer", minHeight: 44 }}>Disconnect wallet</button>
       </div>
 
       <div style={{ display: "grid", gap: 16 }}>
@@ -285,7 +285,7 @@ export default function ClockInPage() {
 <div style={{background: 'var(--inset)', padding: '14px 16px'}}>Ticker<div style={{fontFamily: "'Geist Mono', monospace", color: 'var(--ink)', fontSize: '16px'}}>{me?.ticker}</div></div>
 <div style={{background: 'var(--inset)', padding: '14px 16px'}}>Launch layer<div style={{color: 'var(--ink)', fontSize: '16px'}}>Pons</div></div>
 <div style={{background: 'var(--inset)', padding: '14px 16px'}}>Network<div style={{color: 'var(--ink)', fontSize: '16px'}}>Robinhood Chain</div></div>
-<div style={{background: 'var(--inset)', padding: '14px 16px'}}>Network fee<div style={{color: 'var(--ink)', fontSize: '16px'}}>Free on testnet</div></div>
+<div style={{background: 'var(--inset)', padding: '14px 16px'}}>Network fee<div style={{color: 'var(--ink)', fontSize: '16px'}}>Paid in {CHAIN.symbol}</div></div>
 </div>
 {showList && (<>
 <ul style={{listStyle: 'none', margin: '26px 0 0', padding: '0', display: 'flex', flexDirection: 'column', gap: '8px'}}>

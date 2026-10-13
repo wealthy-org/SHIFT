@@ -37,8 +37,12 @@ contract Deploy is Script {
     Deployment private d;
 
     function run() external {
-        uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
-        address deployer = vm.addr(deployerKey);
+        // Two signer modes: raw DEPLOYER_PRIVATE_KEY in env (dev/testnet), or a
+        // forge keystore account unlocked via the CLI `--account <name>` flag
+        // (mainnet) — in the latter case the key never touches this process's
+        // env and DEPLOYER_ADDRESS must be set to that account's address.
+        uint256 deployerKeyEnv = vm.envOr("DEPLOYER_PRIVATE_KEY", uint256(0));
+        address deployer = deployerKeyEnv != 0 ? vm.addr(deployerKeyEnv) : vm.envAddress("DEPLOYER_ADDRESS");
         address signer = vm.envOr("SIGNER_ADDRESS", deployer);
         address admin = vm.envOr("ADMIN_ADDRESS", deployer);
         address treasury = vm.envOr("TREASURY_ADDRESS", admin);
@@ -50,7 +54,11 @@ contract Deploy is Script {
 
         (uint16[] memory thresholds, string[] memory names) = _ladder();
 
-        vm.startBroadcast(deployerKey);
+        if (deployerKeyEnv != 0) {
+            vm.startBroadcast(deployerKeyEnv);
+        } else {
+            vm.startBroadcast(deployer);
+        }
 
         EmployeeRegistry registry = new EmployeeRegistry(admin);
         RankManager ranks = new RankManager(admin, thresholds, names);

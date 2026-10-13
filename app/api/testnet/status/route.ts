@@ -7,8 +7,8 @@ export const dynamic = "force-dynamic";
 export const GET = handle(async (ctx) => {
   const c = chainSummary(ctx.s);
   return {
-    chainId: 46630,
-    network: "Robinhood Chain Testnet",
+    chainId: Number(process.env.NEXT_PUBLIC_CHAIN_ID || 0),
+    network: process.env.NEXT_PUBLIC_CHAIN_NAME || "",
     contracts: CONTRACT_ADDRESSES,
     signerActive: c.active,
     mode: c.mode,

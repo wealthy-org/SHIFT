@@ -8,6 +8,8 @@ next-env.d.ts
 .data
 .env
 .env.local
+.env.production.local
+.env.*.local
 
 # OS noise
 .DS_Store

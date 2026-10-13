@@ -96,7 +96,7 @@ export function officeScene(s: State, now: number) {
       label: ev.type,
       who: ev.who,
       employeeId: ev.employeeId ?? null,
-      chainId: 46630,
+      chainId: Number(process.env.NEXT_PUBLIC_CHAIN_ID || 0),
       block: ev.block,
       tx: ev.tx,
       confirmation: head - ev.block >= CONFIG.confirmDepth ? "confirmed" : "pending",

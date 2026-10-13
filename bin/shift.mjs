@@ -36,26 +36,35 @@ const __dirname = dirname(__filename);
 const rootDir = resolve(__dirname, "..");
 
 // 1. Deployments & Environment
-const deploymentsPath = resolve(rootDir, "contracts/deployments/46630.json");
+// Swap this path to the matching contracts/deployments/<chainId>.json when moving networks.
+const deploymentsPath = resolve(rootDir, "contracts/deployments/4663.json");
 const deployments = existsSync(deploymentsPath)
   ? JSON.parse(readFileSync(deploymentsPath, "utf-8"))
   : { contracts: {} };
 
 const envPath = resolve(rootDir, ".env.local");
-let SIGNER_KEY = "0xc02bc45e8e17dc7d9dd21cc6a020db1abf0ab70c7f9be7f7a4588e8ea5c181e4";
-if (existsSync(envPath)) {
+let SIGNER_KEY = process.env.SIGNER_PRIVATE_KEY;
+if (!SIGNER_KEY && existsSync(envPath)) {
   const content = readFileSync(envPath, "utf-8");
   const match = content.match(/SIGNER_PRIVATE_KEY=(0x[a-fA-F0-9]{64})/);
   if (match) SIGNER_KEY = match[1];
 }
+if (!SIGNER_KEY) {
+  console.error("SIGNER_PRIVATE_KEY not set (env or .env.local). Refusing to run with no signer.");
+  process.exit(1);
+}
 
-const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://rpc.testnet.chain.robinhood.com";
-const EXPLORER_URL = process.env.NEXT_PUBLIC_EXPLORER_URL || "https://explorer.testnet.chain.robinhood.com";
-const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID || 46630);
+const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "";
+const EXPLORER_URL = process.env.NEXT_PUBLIC_EXPLORER_URL || "";
+const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID || 0);
+if (!RPC_URL || !CHAIN_ID) {
+  console.error("NEXT_PUBLIC_RPC_URL and NEXT_PUBLIC_CHAIN_ID must be set in env.");
+  process.exit(1);
+}
 
 const ROBINHOOD_CHAIN = {
   id: CHAIN_ID,
-  name: "Robinhood Chain Testnet",
+  name: process.env.NEXT_PUBLIC_CHAIN_NAME || "",
   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
   rpcUrls: { default: { http: [RPC_URL] } },
 };

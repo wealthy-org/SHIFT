@@ -3,8 +3,8 @@
 import { execFileSync } from "node:child_process";
 import { leafHash, merkleProof, merkleRoot, resultHash, verifyProof, type Hex } from "../lib/engine/util";
 
-const DIST = "0xa87f8fC594C217aE78F9d1E7Ac361DAB45Fe849E";
-const RPC = "https://rpc.testnet.chain.robinhood.com";
+const DIST = process.env.PAYROLL_DISTRIBUTOR || "0xa87f8fC594C217aE78F9d1E7Ac361DAB45Fe849E";
+const RPC = process.env.NEXT_PUBLIC_RPC_URL || "https://rpc.testnet.chain.robinhood.com";
 const cast = (...a: string[]) => execFileSync("cast", a, { encoding: "utf8" }).trim();
 const ok = (label: string, a: string, b: string) => {
   const same = a.toLowerCase() === b.toLowerCase();

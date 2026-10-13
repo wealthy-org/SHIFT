@@ -79,7 +79,7 @@ export function officeView(s: State, now: number) {
     now, epochId: cur.epochId, payday: Math.max(0, Math.round((cur.endTime - now) / 1000)),
     onShift: desks.filter((d) => d.status === "WORKING" || d.status === "CLOCKED IN").length, total: emps.length, launches: emps.length, poolEth: est.poolEth, desks,
     simCount: desks.filter((d) => d.sim).length,
-    network: { block: blockAt(s, now), name: "Robinhood Chain Testnet (simulated)" },
+    network: { block: blockAt(s, now), name: `${process.env.NEXT_PUBLIC_CHAIN_NAME || "Robinhood Chain"} (simulated)` },
   };
 }
 

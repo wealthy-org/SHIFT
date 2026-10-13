@@ -5,7 +5,7 @@ import type { ChainJob, State } from "../engine/types";
 import { gweiToWei } from "../engine/util";
 import { EMPLOYEE_REGISTRY_ABI, PAYROLL_DISTRIBUTOR_ABI, PAYROLL_VAULT_ABI, SHIFT_MANAGER_ABI } from "./abi";
 import { CONTRACT_ADDRESSES } from "./client";
-import deployments from "../../contracts/deployments/46630.json";
+import deployments from "../../contracts/deployments/4663.json";
 import { chainOn, enqueue } from "./jobs";
 import { signerService } from "./signer";
 

@@ -8,7 +8,7 @@ type Eip1193 = { request(a: { method: string; params?: unknown[] }): Promise<any
 
 export const CHAIN = {
   id: Number(process.env.NEXT_PUBLIC_CHAIN_ID || 0),
-  name: process.env.NEXT_PUBLIC_CHAIN_NAME || "Robinhood Chain Testnet",
+  name: process.env.NEXT_PUBLIC_CHAIN_NAME || "",
   rpc: process.env.NEXT_PUBLIC_RPC_URL || "",
   explorer: process.env.NEXT_PUBLIC_EXPLORER_URL || "",
   symbol: process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || "ETH",

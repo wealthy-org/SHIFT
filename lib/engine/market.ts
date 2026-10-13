@@ -15,7 +15,7 @@ export interface PonsAdapter {
 }
 
 export const mockPons: PonsAdapter = {
-  name: "MockPons (testnet simulation)",
+  name: "MockPons (simulated)",
   capabilities: { creatorFeeRouting: true },
   launch(wallet, ticker, profile) {
     const token = hex(`token:${wallet}:${ticker}`, 40);

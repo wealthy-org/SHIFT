@@ -1,19 +1,20 @@
 import { createPublicClient, createWalletClient, http, custom, type PublicClient, type WalletClient } from "viem";
-import deployments from "../../contracts/deployments/46630.json";
+// Swap this import to the matching contracts/deployments/<chainId>.json when moving networks.
+import deployments from "../../contracts/deployments/4663.json";
 
-const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID || 46630);
+const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID || 0);
 
 export const ACTIVE_CHAIN = {
   id: chainId,
-  name: process.env.NEXT_PUBLIC_CHAIN_NAME || "Robinhood Chain",
+  name: process.env.NEXT_PUBLIC_CHAIN_NAME || "",
   nativeCurrency: { name: "Ether", symbol: process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || "ETH", decimals: 18 },
   rpcUrls: {
-    default: { http: [process.env.NEXT_PUBLIC_RPC_URL || "https://rpc.testnet.chain.robinhood.com"] },
+    default: { http: [process.env.NEXT_PUBLIC_RPC_URL || ""] },
   },
   blockExplorers: {
     default: {
       name: "Explorer",
-      url: process.env.NEXT_PUBLIC_EXPLORER_URL || "https://explorer.testnet.chain.robinhood.com",
+      url: process.env.NEXT_PUBLIC_EXPLORER_URL || "",
     },
   },
 } as const;
@@ -33,7 +34,7 @@ export const CONTRACT_ADDRESSES = {
 export function getPublicClient() {
   return createPublicClient({
     chain: ROBINHOOD_TESTNET,
-    transport: http(process.env.NEXT_PUBLIC_RPC_URL || "https://rpc.testnet.chain.robinhood.com"),
+    transport: http(process.env.NEXT_PUBLIC_RPC_URL || ""),
   });
 }
 
