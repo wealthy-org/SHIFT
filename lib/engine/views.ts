@@ -201,7 +201,10 @@ export function payrollView(s: State, empId: number, now: number) {
 }
 
 export function proofView(s: State, empId: number | null, now: number) {
-  const list = s.events.slice(-80).reverse().map((ev) => {
+  // Demo mode keeps generating simulated events, which can push real
+  // (onchain-confirmed) ones out of a short window. Widen it so a real event
+  // stays visible for longer before scrolling out.
+  const list = s.events.slice(-500).reverse().map((ev) => {
     const v: any = evView(s, ev, now);
     const p = ev.payload;
     if (ev.type === "Shift Finalized" && p) {
