@@ -29,7 +29,7 @@ export function ThemeToggle() {
 }
 
 export default function AppShell({ active, title, subtitle, actions, children, overlay }: { active: string; title: string; subtitle?: ReactNode; actions?: ReactNode; children: ReactNode; overlay?: ReactNode }) {
-  const { me, wallet, secsToEpoch } = useMe();
+  const { me, wallet, secsToEpoch, disconnect } = useMe();
   const deskHref = me ? `/employee/${me.id}` : "/clock-in";
   const nav = [
     ["office", "/office", "Office"],
@@ -74,12 +74,16 @@ export default function AppShell({ active, title, subtitle, actions, children, o
           <h1 style={{ margin: 0, flex: subtitle ? "0 0 auto" : "1 1 auto", fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: 800, fontSize: 34, lineHeight: 1 }}>{title}</h1>
           {subtitle && <div style={{ flex: "1 1 auto", color: "var(--ink-dim)", fontSize: 15, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>{subtitle}</div>}
           {actions}
-          <span title="Simulated Pons market on a simulated chain. No real funds." style={{ border: "1px dashed var(--line-strong)", borderRadius: 999, padding: "6px 10px", fontSize: 12, color: "var(--ink-dimmer)" }}>Testnet · simulated market</span>
           <ThemeToggle />
           {wallet ? (
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid var(--line)", borderRadius: 999, padding: "8px 14px", fontFamily: "'Geist Mono', monospace", fontSize: 13 }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#C8F135", display: "inline-block" }} />
-              {short(wallet)}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 0, border: "1px solid var(--line)", borderRadius: 999, fontFamily: "'Geist Mono', monospace", fontSize: 13 }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 10px 8px 14px" }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#C8F135", display: "inline-block" }} />
+                {short(wallet)}
+              </span>
+              <button type="button" onClick={() => void disconnect()} title="Disconnect wallet" aria-label="Disconnect wallet" style={{ background: "none", border: 0, borderLeft: "1px solid var(--line)", padding: "8px 12px", cursor: "pointer", color: "var(--ink-dim)", font: "inherit", fontSize: 13, minHeight: 36 }}>
+                Log out
+              </button>
             </span>
           ) : (
             <Link href="/clock-in" className="btng" style={{ textDecoration: "none", color: "var(--ink)", border: "1px solid var(--line-strong)", borderRadius: 999, padding: "8px 14px", fontSize: 14 }}>Connect wallet</Link>

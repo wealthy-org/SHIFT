@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { Fragment, useEffect, useState } from "react";
 import { ClockInSkeleton } from "../Skeleton";
@@ -192,9 +193,7 @@ export default function ClockInPage() {
       <header style={{ borderBottom: "1px solid var(--border)" }}>
         <div style={{ maxWidth: 1240, margin: "0 auto", padding: "14px clamp(20px,4vw,48px)", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px 24px" }}>
           <Link href="/" style={{ textDecoration: "none", color: "var(--ink)", display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ width: 30, height: 30, borderRadius: 8, background: "#C8F135", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="#0F130E" strokeWidth="2" /><path d="M8 4.5V8l2.4 1.6" fill="none" stroke="#0F130E" strokeWidth="2" strokeLinecap="round" /></svg>
-            </span>
+            <Image src="/logo.png" alt="" width={256} height={256} style={{ width: 30, height: 30, flex: "none" }} priority />
             <span style={{ fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: 800, fontSize: 26, letterSpacing: "0.04em" }}>SHIFT</span>
           </Link>
           <span style={{ flex: 1 }} />
