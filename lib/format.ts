@@ -20,5 +20,16 @@ export const CHIP: Record<string, [string, string, string]> = {
 };
 export const EXPLORER = process.env.NEXT_PUBLIC_EXPLORER_URL || "";
 export const PONS = process.env.NEXT_PUBLIC_PONS_URL || "";
-export const explorerTx = (tx: string) => (EXPLORER ? `${EXPLORER.replace(/\/$/, "")}/tx/${tx}` : "");
+
+// The engine's persisted state can carry events from before a chain migration
+// (e.g. testnet records still in a DB that's now pointed at mainnet). Anything
+// older than the cutover is linked against the legacy explorer instead, so the
+// link actually resolves rather than 404ing on the chain it never happened on.
+const LEGACY_EXPLORER = process.env.NEXT_PUBLIC_LEGACY_EXPLORER_URL || "";
+const MIGRATION_CUTOVER_TS = Number(process.env.NEXT_PUBLIC_MIGRATION_CUTOVER_TS || 0);
+
+export const explorerTx = (tx: string, ts?: number) => {
+  const base = ts && MIGRATION_CUTOVER_TS && ts < MIGRATION_CUTOVER_TS ? LEGACY_EXPLORER : EXPLORER;
+  return base ? `${base.replace(/\/$/, "")}/tx/${tx}` : "";
+};
 export const ponsToken = (token: string) => (PONS ? `${PONS.replace(/\/$/, "")}/token/${token}` : "");

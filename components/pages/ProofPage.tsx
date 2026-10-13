@@ -33,7 +33,7 @@ export default function ProofPage() {
   }));
   const sel = cur ? { type: cur.type, contract: cur.contract, who: cur.who, block: cur.block.toLocaleString("en-US"), tx: cur.tx, resultHash: cur.resultHash || "" } : { type: "", contract: "", who: "", block: "", tx: "", resultHash: "" };
   const confs = cur ? (cur.final ? "Final" : `${cur.depth}/${data.confirmDepth} confirmations`) : "";
-  const explorerHref = cur && explorerTx(cur.tx) ? explorerTx(cur.tx) : "#";
+  const explorerHref = cur && explorerTx(cur.tx, cur.ts) ? explorerTx(cur.tx, cur.ts) : "#";
   const ponsHref = cur?.payload?.token && ponsToken(cur.payload.token) ? ponsToken(cur.payload.token) : "#";
   const P = cur?.pkg;
   const hasPkg = !!P, noPkg = !P;
