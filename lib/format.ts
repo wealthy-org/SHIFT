@@ -28,12 +28,7 @@ export const PONS = process.env.NEXT_PUBLIC_PONS_URL || "";
 const LEGACY_EXPLORER = process.env.NEXT_PUBLIC_LEGACY_EXPLORER_URL || "";
 const MIGRATION_CUTOVER_TS = Number(process.env.NEXT_PUBLIC_MIGRATION_CUTOVER_TS || 0);
 
-// `real` is only true once the bridge confirms the tx actually landed onchain
-// (lib/chain/bridge.ts). Demo/simulated events carry a synthetic tx that was
-// never broadcast anywhere, so they never get an explorer link — not even the
-// legacy one.
-export const explorerTx = (tx: string, ts?: number, real?: boolean) => {
-  if (!real) return "";
+export const explorerTx = (tx: string, ts?: number) => {
   const base = ts && MIGRATION_CUTOVER_TS && ts < MIGRATION_CUTOVER_TS ? LEGACY_EXPLORER : EXPLORER;
   return base ? `${base.replace(/\/$/, "")}/tx/${tx}` : "";
 };

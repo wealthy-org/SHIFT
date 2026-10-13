@@ -33,7 +33,7 @@ export default function ProofPage() {
   }));
   const sel = cur ? { type: cur.type, contract: cur.contract, who: cur.who, block: cur.block.toLocaleString("en-US"), tx: cur.tx, resultHash: cur.resultHash || "" } : { type: "", contract: "", who: "", block: "", tx: "", resultHash: "" };
   const confs = cur ? (cur.final ? "Final" : `${cur.depth}/${data.confirmDepth} confirmations`) : "";
-  const explorerHref = cur && explorerTx(cur.tx, cur.ts, cur.real) ? explorerTx(cur.tx, cur.ts, cur.real) : "#";
+  const explorerHref = cur && explorerTx(cur.tx, cur.ts) ? explorerTx(cur.tx, cur.ts) : "#";
   const ponsHref = cur?.payload?.token && ponsToken(cur.payload.token) ? ponsToken(cur.payload.token) : "#";
   const P = cur?.pkg;
   const hasPkg = !!P, noPkg = !P;
@@ -80,7 +80,7 @@ export default function ProofPage() {
 <div style={{background: 'var(--inset)', padding: '12px 14px'}}>Emitted by<div style={{color: 'var(--ink)', fontSize: '15px'}}>{sel.contract}</div></div>
 </div>
 <div style={{display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '18px'}}>
-{cur?.real && explorerHref !== "#" && (
+{explorerHref !== "#" && (
 <a href={explorerHref} target="_blank" rel="noreferrer" className="btnl" style={{textDecoration: 'none', background: '#C8F135', color: '#0F130E', fontWeight: '600', fontSize: '14px', padding: '0 16px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', borderRadius: '999px'}}>View on Robinhood Chain Explorer ↗</a>
 )}
 <a href={ponsHref} target="_blank" rel="noreferrer" className="btng" style={{textDecoration: 'none', color: 'var(--ink)', fontSize: '14px', padding: '0 16px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', border: '1px solid var(--line-strong)', borderRadius: '999px'}}>View on Pons ↗</a>
