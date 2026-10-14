@@ -42,7 +42,7 @@ export default function AppShell({ active, title, subtitle, actions, children, o
     <div className="sh sh-app" style={{ background: "var(--bg)", color: "var(--ink)", fontFamily: "'Geist', 'Helvetica Neue', Helvetica, sans-serif", fontSize: 16, lineHeight: 1.55, minHeight: "100vh", display: "flex", flexWrap: "wrap", fontVariantNumeric: "tabular-nums", position: "relative" }}>
       <aside className="appside" style={{ flex: "1 1 232px", background: "var(--inset)", borderRight: "1px solid var(--border)", padding: "20px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
         <Link href="/" style={{ textDecoration: "none", color: "var(--ink)", display: "flex", alignItems: "center", gap: 10, padding: "4px 8px 20px" }}>
-          <Image src="/logo.png" alt="" width={256} height={256} style={{ width: 30, height: 30, flex: "none" }} priority />
+          <Image src="/logo-1.png" alt="" width={256} height={256} style={{ width: 30, height: 30, flex: "none" }} priority />
           <span style={{ fontFamily: "'Big Shoulders Display', 'Arial Narrow', sans-serif", fontWeight: 800, fontSize: 26, letterSpacing: "0.04em" }}>SHIFT</span>
         </Link>
         <nav aria-label="App" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
