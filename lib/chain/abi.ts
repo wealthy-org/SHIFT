@@ -82,4 +82,12 @@ export const PAYROLL_DISTRIBUTOR_ABI = [
 export const PONS_ADAPTER_ABI = [
   { type: "function", name: "launch", inputs: [u("employeeId"), u("name", "string"), u("symbol", "string")], outputs: [u("token", "address"), u("ponsMarket", "address")], stateMutability: "payable" },
   { type: "event", name: "TokenLaunched", inputs: [u("employeeId", "uint256", true), u("token", "address", true), u("ponsMarket", "address", false)] },
+  // Not checked by abi-check.mts (no single canonical Solidity source — testnet and mainnet
+  // each have their own adapter contract behind the same IPonsAdapter interface). These error
+  // names are from PonsAdapterMainnet.sol specifically, added here only so bridge.ts's decode()
+  // can name mainnet reverts in logs/job.error instead of showing a raw selector.
+  err("LaunchFailed"),
+  err("InsufficientValue", u("sent"), u("required")),
+  err("InsufficientPairTokenFloat", u("have"), u("need")),
+  err("NotAdmin"),
 ] as const;

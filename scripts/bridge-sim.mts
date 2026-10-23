@@ -134,6 +134,12 @@ function exec(address: string, fn: string, args: any[], value?: bigint) {
       wallets.set(lc(wallet), (wallets.get(lc(wallet)) ?? 0n) + amount);
       logs.push(mkLog(A.PAYROLL_DISTRIBUTOR_ABI, "PayrollClaimed", { epochId, employeeId: emp, wallet, amount }, address));
     } else throw new Error("unknown dist fn " + fn);
+  } else if (a === lc(ADDR.ponsAdapter)) {
+    if (fn !== "launch") throw new Error("unknown adapter fn " + fn);
+    const [employeeId] = args;
+    const token = "0x" + employeeId.toString(16).padStart(39, "0") + "1";
+    const ponsMarket = "0x" + employeeId.toString(16).padStart(39, "0") + "2";
+    logs.push(mkLog(A.PONS_ADAPTER_ABI, "TokenLaunched", { employeeId, token, ponsMarket }, address));
   } else throw new Error("unknown address " + address);
   return logs;
 }

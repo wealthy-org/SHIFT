@@ -1,6 +1,5 @@
 import { createPublicClient, createWalletClient, http, custom, type PublicClient, type WalletClient } from "viem";
-// Swap this import to the matching contracts/deployments/<chainId>.json when moving networks.
-import deployments from "../../contracts/deployments/4663.json";
+import { deployments } from "./deployments";
 
 const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID || 0);
 

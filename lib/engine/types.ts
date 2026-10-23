@@ -109,6 +109,11 @@ export interface Employee {
   ponsMarketAddress?: string;
   onchainId?: number; // EmployeeRegistry id, set once the register tx confirms
   chainLinked?: boolean; // token linked in the registry, shifts may open
+  // The real Pons-side token/curve, launched via PonsAdapter.launch() on the live chain.
+  // Separate from tokenAddress/ponsMarketAddress, which stay the locally-simulated market
+  // (scoring keeps running on that one) — this is only set once a real "launch" job confirms.
+  realPonsToken?: string;
+  realPonsMarket?: string;
   autoStart?: boolean; // open the first shift as soon as the chain link confirms
   joinedAt: number;
   currentRank: number;
@@ -209,7 +214,7 @@ export interface State {
   chain?: ChainLedger;
 }
 
-export type JobKind = "register" | "link" | "startShift" | "finalizeShift" | "invalidateShift" | "fundVault" | "finalizeEpoch" | "claim";
+export type JobKind = "register" | "link" | "launch" | "startShift" | "finalizeShift" | "invalidateShift" | "fundVault" | "finalizeEpoch" | "claim";
 export interface ChainJob {
   id: number;
   kind: JobKind;

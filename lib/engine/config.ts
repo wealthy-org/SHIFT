@@ -4,6 +4,18 @@ const BOTS = Math.max(0, Math.min(12, Math.floor(Number(process.env.SHIFT_BOTS ?
 // placeholders per the brief and must be tuned with testnet simulations.
 const MODE = (process.env.DATA_MODE || "demo") as "live" | "demo";
 
+// Simulated bots run shifts and payroll on their own, generating a steady stream of
+// onchain writes. That's free on testnet (faucet ETH) but burns real funds on mainnet
+// (chain 4663), so refuse to boot with bots turned on against mainnet rather than let
+// a stale/copied env file rack up gas unattended. Set SHIFT_BOTS=0 to run mainnet.
+const MAINNET_CHAIN_ID = 4663;
+if (MODE === "live" && BOTS > 0 && Number(process.env.NEXT_PUBLIC_CHAIN_ID) === MAINNET_CHAIN_ID) {
+  throw new Error(
+    `Refusing to start: DATA_MODE=live with SHIFT_BOTS=${BOTS} against mainnet (chain ${MAINNET_CHAIN_ID}). ` +
+      "Bots cost real gas on mainnet. Set SHIFT_BOTS=0, or point NEXT_PUBLIC_CHAIN_ID at testnet (46630) instead.",
+  );
+}
+
 export const CONFIG = {
   dataMode: MODE,
   // Live mode runs against a real chain clock, so time cannot be sped up.

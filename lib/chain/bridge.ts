@@ -3,9 +3,9 @@ import { CONFIG } from "../engine/config";
 import { leafProof, settleClaim } from "../engine/engine";
 import type { ChainJob, State } from "../engine/types";
 import { gweiToWei } from "../engine/util";
-import { EMPLOYEE_REGISTRY_ABI, PAYROLL_DISTRIBUTOR_ABI, PAYROLL_VAULT_ABI, SHIFT_MANAGER_ABI } from "./abi";
+import { EMPLOYEE_REGISTRY_ABI, PAYROLL_DISTRIBUTOR_ABI, PAYROLL_VAULT_ABI, PONS_ADAPTER_ABI, SHIFT_MANAGER_ABI } from "./abi";
 import { CONTRACT_ADDRESSES } from "./client";
-import deployments from "../../contracts/deployments/4663.json";
+import { deployments } from "./deployments";
 import { chainOn, enqueue } from "./jobs";
 import { signerService } from "./signer";
 
@@ -49,6 +49,7 @@ function deps(s: State, j: ChainJob): Dep {
   switch (j.kind) {
     case "register":
     case "fundVault":
+    case "launch":
       return "ready";
     case "link": {
       const e = s.employees[j.ref];
@@ -122,6 +123,37 @@ async function execute(s: State, j: ChainJob) {
         e.chainLinked = true;
         return done(j);
       }
+      throw err;
+    }
+  }
+
+  if (j.kind === "launch") {
+    const e = s.employees[j.ref];
+    // Mainnet's Pons only accepts launches that pay its exact flat launchFee (confirmed
+    // onchain: NativeValueMismatch otherwise); the testnet stand-in takes any value,
+    // including 0. Chain-specific because the fee lives on Pons's own factory, not ours.
+    let value = 0n;
+    if (Number(process.env.NEXT_PUBLIC_CHAIN_ID) === 4663) {
+      const PONS_FACTORY = "0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e" as Hex;
+      const FEE_ABI = [{ type: "function", name: "launchFee", inputs: [], outputs: [{ type: "uint256" }], stateMutability: "view" }] as const;
+      value = (await pub.readContract({ address: PONS_FACTORY, abi: FEE_ABI, functionName: "launchFee" })) as bigint;
+    }
+    try {
+      const { hash, rc } = await send(addr.ponsAdapter, PONS_ADAPTER_ABI, "launch", [BigInt(e.employeeId), e.displayName, e.ticker.replace("$", "")], value);
+      const log = parseEventLogs({ abi: PONS_ADAPTER_ABI, logs: rc.logs, eventName: "TokenLaunched" })[0];
+      if (log) {
+        const args = log.args as unknown as { token: string; ponsMarket: string };
+        e.realPonsToken = args.token;
+        e.realPonsMarket = args.ponsMarket;
+      }
+      realize(s, j.eventId, hash, rc.blockNumber);
+      return done(j, hash);
+    } catch (err) {
+      // Not funded with the pair-token float yet (mainnet) — fail this job outright instead
+      // of retrying every ~60s and burning the signer's gas on a call that can't succeed
+      // until someone tops it up. Nothing else depends on "launch" (see deps() above), so
+      // this never blocks register/link/startShift/payroll.
+      if (decode(err).name === "InsufficientPairTokenFloat") { fail(j, "INSUFFICIENT_PAIR_TOKEN_FLOAT"); return; }
       throw err;
     }
   }

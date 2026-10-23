@@ -99,7 +99,14 @@ function launchNow(s: State, e: Employee, ts: number) {
   e.ponsMarketAddress = m.market;
   e.launchStatus = "LIVE";
   const le = emit(s, "Token Launched", e.displayName, ts, { employeeId: e.employeeId, payload: { token: m.token, ponsMarket: m.market, ticker: e.ticker } });
-  if (chainEligible(e)) enqueue(s, "link", e.employeeId, { eventId: le.id });
+  if (chainEligible(e)) {
+    enqueue(s, "link", e.employeeId, { eventId: le.id });
+    // Separate from "link" (which anchors the simulated market used for scoring): this one
+    // calls PonsAdapter.launch() for real, so the employee also gets an actual tradeable
+    // token on Pons. Its own event/tx, so it never overwrites the "link" job's proof entry.
+    const re = emit(s, "Pons Token Launched", e.displayName, ts, { employeeId: e.employeeId, payload: { ticker: e.ticker } });
+    enqueue(s, "launch", e.employeeId, { eventId: re.id });
+  }
 }
 
 export function startLaunch(s: State, empId: number, now: number): Launch {

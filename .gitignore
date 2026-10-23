@@ -10,6 +10,10 @@ next-env.d.ts
 .env.local
 .env.production.local
 .env.*.local
+# filled-in env copies for a specific host/deploy — only .env.*.example is meant to be tracked
+.env.mainnet.railway
+.env.mainnet.vercel
+.env.testnet.railway
 
 # OS noise
 .DS_Store
