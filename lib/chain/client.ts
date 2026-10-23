@@ -31,9 +31,11 @@ export const CONTRACT_ADDRESSES = {
 };
 
 export function getPublicClient() {
+  // undefined (not "") so viem doesn't throw synchronously on a missing RPC URL — see the
+  // matching note in lib/chain/signer.ts for why that matters at build/import time.
   return createPublicClient({
     chain: ROBINHOOD_TESTNET,
-    transport: http(process.env.NEXT_PUBLIC_RPC_URL || ""),
+    transport: http(process.env.NEXT_PUBLIC_RPC_URL || undefined),
   });
 }
 

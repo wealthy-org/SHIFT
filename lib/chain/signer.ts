@@ -10,7 +10,13 @@ export class SignerService {
   readonly publicClient;
 
   constructor() {
-    const rpc = ACTIVE_CHAIN.rpcUrls.default.http[0];
+    // viem's http() throws synchronously if given an empty string (not lazily, on first
+    // use) — and this class is built as a module-level singleton, so that throw happens
+    // the moment anything imports this file, including Next's build-time page-data
+    // collection for API routes. Passing undefined instead defers to viem's own default
+    // and only errors when a call is actually attempted, so a missing/misconfigured
+    // NEXT_PUBLIC_RPC_URL doesn't take the whole build down.
+    const rpc = ACTIVE_CHAIN.rpcUrls.default.http[0] || undefined;
     this.publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http(rpc) });
     const key = process.env.SIGNER_PRIVATE_KEY as `0x${string}` | undefined;
     if (key && /^0x[0-9a-fA-F]{64}$/.test(key)) {
